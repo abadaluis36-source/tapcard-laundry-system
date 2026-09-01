@@ -4,8 +4,7 @@ import { StatusBadge, PaymentBadge } from './StatusBadge';
 import { 
   X, 
   Copy, 
-  Check, 
-  Clock 
+  Check 
 } from 'lucide-react';
 
 export const ClaimStubModal: React.FC = () => {
@@ -83,18 +82,8 @@ export const ClaimStubModal: React.FC = () => {
               <span className="font-bold text-slate-800 text-sm">{ticket.customerName}</span>
             </div>
             <div>
-              <span className="text-slate-500 block text-[11px]">Mobile Number</span>
-              <span className="font-mono text-slate-700">{ticket.customerPhone}</span>
-            </div>
-            <div>
               <span className="text-slate-500 block text-[11px]">Date & Time</span>
               <span className="text-slate-700">{ticket.createdAt}</span>
-            </div>
-            <div>
-              <span className="text-slate-500 block text-[11px]">Target Pickup</span>
-              <span className="text-slate-800 font-semibold flex items-center gap-1">
-                <Clock size={12} className="text-emerald-600" /> {ticket.estimatedReadyAt}
-              </span>
             </div>
           </div>
 
@@ -139,7 +128,6 @@ export const ClaimStubModal: React.FC = () => {
           <div className="text-[11px] text-slate-500 text-center space-y-0.5">
             <p className="font-medium text-slate-700">TAPCARD LAUNDRY SHOP</p>
             <p>0917-555-8921 · Open Daily 7:00 AM - 9:00 PM</p>
-            <p className="text-[10px] text-slate-400">Please present this Ticket ID or Claim Stub upon collection.</p>
           </div>
         </div>
 

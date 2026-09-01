@@ -96,6 +96,7 @@ export interface Expense {
   date: string;
   recordedBy: string;
   referenceNo?: string;
+  pieces?: number;
 }
 
 export interface InventoryItem {
@@ -144,16 +145,15 @@ export type AdminTab =
   | 'tickets'
   | 'create-ticket'
   | 'customers'
-  | 'services'
   | 'payments'
   | 'expenses'
-  | 'reports'
-  | 'settings';
+  | 'reports';
 
 export type OwnerTab = 
   | 'dashboard'
   | 'tickets'
   | 'customers'
+  | 'services'
   | 'revenue'
   | 'expenses'
   | 'analytics'

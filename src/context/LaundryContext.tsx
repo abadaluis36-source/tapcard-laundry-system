@@ -65,6 +65,8 @@ interface LaundryContextType {
   setActiveDetailTicket: (ticket: Ticket | null) => void;
   activeClaimStubTicket: Ticket | null;
   setActiveClaimStubTicket: (ticket: Ticket | null) => void;
+  ticketStatusFilter: LaundryStatus | 'ALL';
+  setTicketStatusFilter: (status: LaundryStatus | 'ALL') => void;
   
   // Actions
   addToast: (title: string, message: string, type?: 'success' | 'info' | 'warning' | 'error') => void;
@@ -74,7 +76,10 @@ interface LaundryContextType {
   updateTicketPayment: (ticketId: string, paymentStatus: PaymentStatus, amountPaid: number, method: PaymentMethod) => void;
   addCustomer: (customerData: Omit<Customer, 'id' | 'totalOrders' | 'totalSpent' | 'lastOrderDate' | 'activeTicketCount'>) => Customer;
   addExpense: (expenseData: Omit<Expense, 'id'>) => void;
+  deleteExpense: (id: string) => void;
   addInventoryItem: (itemData: Omit<InventoryItem, 'id' | 'status'>) => void;
+  updateInventoryItem: (id: string, updatedData: Partial<InventoryItem>) => void;
+  deleteInventoryItem: (id: string) => void;
   updateInventoryStock: (id: string, newStock: number) => void;
   restockInventoryItem: (id: string, additionalAmount: number, expenseCost?: number) => void;
   addService: (serviceData: Omit<ServicePricing, 'id'>) => void;
@@ -137,13 +142,14 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [currentUser]);
 
   // Customer view tracking state
-  const [customerSearchQuery, setCustomerSearchQuery] = useState<string>('LM1');
-  const [selectedCustomerTicket, setSelectedCustomerTicket] = useState<Ticket | null>(INITIAL_TICKETS[0]);
+  const [customerSearchQuery, setCustomerSearchQuery] = useState<string>('');
+  const [selectedCustomerTicket, setSelectedCustomerTicket] = useState<Ticket | null>(null);
   
   // Modal states
   const [isCreateTicketOpen, setIsCreateTicketOpen] = useState<boolean>(false);
   const [activeDetailTicket, setActiveDetailTicket] = useState<Ticket | null>(null);
   const [activeClaimStubTicket, setActiveClaimStubTicket] = useState<Ticket | null>(null);
+  const [ticketStatusFilter, setTicketStatusFilter] = useState<LaundryStatus | 'ALL'>('ALL');
 
   // Sync selected customer ticket whenever tickets state changes
   useEffect(() => {
@@ -379,6 +385,11 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     addToast('Expense Added', `₱${newExp.amount.toLocaleString()} for ${newExp.category} recorded.`, 'success');
   };
 
+  const deleteExpense = (id: string) => {
+    setExpenses((prev) => prev.filter((exp) => exp.id !== id));
+    addToast('Expense Deleted', 'Expense item removed from ledger.', 'info');
+  };
+
   const addInventoryItem = (itemData: Omit<InventoryItem, 'id' | 'status'>) => {
     const status: InventoryItem['status'] = 
       itemData.currentStock <= 0 ? 'Out of Stock' :
@@ -392,6 +403,30 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     setInventory((prev) => [newItem, ...prev]);
     addToast('Item Added', `${newItem.name} added to supply inventory.`, 'success');
+  };
+
+  const updateInventoryItem = (id: string, updatedData: Partial<InventoryItem>) => {
+    setInventory((prev) => prev.map(item => {
+      if (item.id === id) {
+        const merged = { ...item, ...updatedData };
+        const currentStock = merged.currentStock;
+        const minThreshold = merged.minThreshold;
+        const status: InventoryItem['status'] = 
+          currentStock <= 0 ? 'Out of Stock' :
+          currentStock <= minThreshold ? 'Low Stock' : 'In Stock';
+        return {
+          ...merged,
+          status
+        };
+      }
+      return item;
+    }));
+    addToast('Item Updated', `Supply specifications updated.`, 'success');
+  };
+
+  const deleteInventoryItem = (id: string) => {
+    setInventory((prev) => prev.filter(item => item.id !== id));
+    addToast('Item Removed', `Supply item removed from inventory.`, 'info');
   };
 
   const updateInventoryStock = (id: string, newStock: number) => {
@@ -591,6 +626,8 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setActiveDetailTicket,
         activeClaimStubTicket,
         setActiveClaimStubTicket,
+        ticketStatusFilter,
+        setTicketStatusFilter,
         addToast,
         removeToast,
         createTicket,
@@ -598,7 +635,10 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         updateTicketPayment,
         addCustomer,
         addExpense,
+        deleteExpense,
         addInventoryItem,
+        updateInventoryItem,
+        deleteInventoryItem,
         updateInventoryStock,
         restockInventoryItem,
         addService,

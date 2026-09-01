@@ -40,11 +40,20 @@ export const SettingsView: React.FC = () => {
       
       {/* Header */}
       <div>
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-700 border border-indigo-200 uppercase tracking-wider">
+            Boss / Owner Configuration
+          </span>
+          <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+            <Sparkles size={12} />
+            Connected to Thermal Stubs & POS Cashier
+          </span>
+        </div>
         <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
           Shop & System Settings
         </h1>
         <p className="text-xs text-slate-500">
-          Configure business metadata, claim stub thermal printing, and SMS ready notifications
+          Configure business metadata, claim stub thermal printing, tax rates, and SMS ready notifications
         </p>
       </div>
 

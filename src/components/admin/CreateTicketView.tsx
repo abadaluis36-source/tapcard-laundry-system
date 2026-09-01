@@ -46,7 +46,7 @@ export const CreateTicketView: React.FC<CreateTicketProps> = ({ isModal = false,
 
   // Selected services cart (initially empty so no automatic ₱350 computation until selected)
   const [selectedServiceId, setSelectedServiceId] = useState<string>('');
-  const [quantity, setQuantity] = useState<number>(5);
+  const [quantity, setQuantity] = useState<number>(1);
   const [specialNote, setSpecialNote] = useState<string>('');
   
   // Multi-item cart
@@ -94,7 +94,7 @@ export const CreateTicketView: React.FC<CreateTicketProps> = ({ isModal = false,
   // Handler when a service is clicked: Select service, auto-populate cart, and auto-focus Weight/Quantity
   const handleSelectService = (srv: typeof services[0]) => {
     setSelectedServiceId(srv.id);
-    const defaultQty = srv.unitType === 'kg' ? (quantity > 0 ? quantity : 5) : (quantity > 0 ? quantity : 1);
+    const defaultQty = quantity > 0 ? quantity : 1;
     setQuantity(defaultQty);
 
     const newItem: ServiceItem = {
@@ -449,7 +449,7 @@ export const CreateTicketView: React.FC<CreateTicketProps> = ({ isModal = false,
 
               {/* Quick weight pills */}
               <div className="hidden sm:flex items-center gap-1">
-                {[4, 5, 6, 8, 10].map((w) => (
+                {[1, 2, 4, 6, 8, 10].map((w) => (
                   <button
                     key={w}
                     type="button"

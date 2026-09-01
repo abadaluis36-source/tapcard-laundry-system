@@ -12,11 +12,9 @@ import {
   TrendingUp, 
   PlusCircle, 
   Eye, 
-  Printer, 
   ChevronRight,
   Search,
   Filter,
-  ArrowUpRight,
   Layers,
   Store,
   Play
@@ -31,7 +29,8 @@ export const AdminDashboard: React.FC = () => {
     setIsCreateTicketOpen,
     setActiveDetailTicket,
     setActiveClaimStubTicket,
-    updateTicketStatus 
+    updateTicketStatus,
+    setTicketStatusFilter
   } = useLaundry();
 
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'WASHING' | 'DRYING' | 'READY'>('ALL');
@@ -45,6 +44,11 @@ export const AdminDashboard: React.FC = () => {
     drying: 6,
     ready: 9,
     completed: 32
+  };
+
+  const navigateToCategory = (status: LaundryStatus | 'ALL') => {
+    setTicketStatusFilter(status);
+    setAdminTab('tickets');
   };
 
   // Filter active laundry
@@ -84,7 +88,6 @@ export const AdminDashboard: React.FC = () => {
             <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase tracking-wider">
               Live Counter Operations
             </span>
-            <span className="text-xs text-slate-400">Shift Operator: Arlene Santos</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
             Tapcard Laundry Shop Dashboard
@@ -123,10 +126,6 @@ export const AdminDashboard: React.FC = () => {
           <div className="text-2xl font-extrabold text-slate-900 font-mono">
             ₱{todayRevenue.toLocaleString()}
           </div>
-          <div className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1 pt-1">
-            <ArrowUpRight size={13} />
-            <span>+14.2% vs yesterday</span>
-          </div>
         </div>
 
         {/* This Month's Revenue */}
@@ -140,42 +139,43 @@ export const AdminDashboard: React.FC = () => {
           <div className="text-2xl font-extrabold text-slate-900 font-mono">
             ₱{monthlyRevenue.toLocaleString()}
           </div>
-          <div className="text-[11px] text-slate-500 pt-1">
-            August 2026 Total Ledger
-          </div>
         </div>
 
         {/* Today's Total Orders */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
+        <button
+          type="button"
+          onClick={() => navigateToCategory('ALL')}
+          className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1 text-left hover:border-sky-300 hover:bg-sky-50/20 transition-all cursor-pointer group"
+          title="Click to view all tickets"
+        >
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold uppercase tracking-wider">Today's Orders</span>
-            <div className="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center font-bold text-xs">
+            <span className="text-xs font-bold uppercase tracking-wider group-hover:text-sky-700">Today's Orders</span>
+            <div className="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center font-bold text-xs group-hover:bg-sky-600 group-hover:text-white transition-colors">
               <ShoppingBag size={14} />
             </div>
           </div>
           <div className="text-2xl font-extrabold text-slate-900 font-mono">
             {stats.todayOrders}
           </div>
-          <div className="text-[11px] text-slate-500 pt-1">
-            32 completed · 15 active
-          </div>
-        </div>
+        </button>
 
         {/* Ready for Pickup */}
-        <div className="bg-emerald-50/80 p-4 rounded-2xl border border-emerald-200 shadow-2xs space-y-1">
+        <button
+          type="button"
+          onClick={() => navigateToCategory('READY')}
+          className="bg-emerald-50/80 p-4 rounded-2xl border border-emerald-200 shadow-2xs space-y-1 text-left hover:border-emerald-400 hover:bg-emerald-100/60 transition-all cursor-pointer group"
+          title="Click to view Ready for Pickup tickets"
+        >
           <div className="flex items-center justify-between text-emerald-800">
-            <span className="text-xs font-bold uppercase tracking-wider">Ready for Pickup</span>
-            <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">
+            <span className="text-xs font-bold uppercase tracking-wider group-hover:text-emerald-900">Ready for Pickup</span>
+            <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs group-hover:scale-105 transition-transform">
               <Sparkles size={14} />
             </div>
           </div>
           <div className="text-2xl font-extrabold text-emerald-950 font-mono">
             {stats.ready}
           </div>
-          <div className="text-[11px] text-emerald-700 font-medium pt-1">
-            Customer notified via SMS/QR
-          </div>
-        </div>
+        </button>
 
       </div>
 
@@ -185,58 +185,101 @@ export const AdminDashboard: React.FC = () => {
           <h2 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">
             Operational Queue Overview
           </h2>
-          <span className="text-xs text-slate-500 font-mono">47 Total Jobs</span>
+          <button
+            type="button"
+            onClick={() => navigateToCategory('ALL')}
+            className="text-xs text-slate-500 hover:text-emerald-700 font-mono hover:underline cursor-pointer"
+            title="Click to view all jobs in Tickets"
+          >
+            47 Total Jobs
+          </button>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
           
-          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
-            <div className="flex items-center justify-between text-slate-500 text-[11px]">
-              <span>Pending Intake</span>
+          {/* Pending Intake */}
+          <button
+            type="button"
+            onClick={() => navigateToCategory('RECEIVED')}
+            className="p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 group shadow-2xs hover:shadow-xs"
+            title="Filter Tickets by Pending Intake (Received)"
+          >
+            <div className="flex items-center justify-between text-slate-500 group-hover:text-slate-800 text-[11px]">
+              <span className="font-semibold">Pending Intake</span>
               <Clock size={13} />
             </div>
             <span className="text-xl font-extrabold font-mono text-slate-800 mt-1">15</span>
-          </div>
+          </button>
 
-          <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-950 flex flex-col justify-between">
-            <div className="flex items-center justify-between text-amber-700 text-[11px]">
-              <span>Washing</span>
+          {/* Washing */}
+          <button
+            type="button"
+            onClick={() => navigateToCategory('WASHING')}
+            className="p-3 rounded-xl bg-amber-50/80 hover:bg-amber-100/90 border border-amber-200 hover:border-amber-300 text-amber-950 flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 group shadow-2xs hover:shadow-xs"
+            title="Filter Tickets by Washing"
+          >
+            <div className="flex items-center justify-between text-amber-700 group-hover:text-amber-900 text-[11px]">
+              <span className="font-semibold">Washing</span>
               <RotateCw size={13} className="animate-spin" />
             </div>
             <span className="text-xl font-extrabold font-mono mt-1">{stats.washing}</span>
-          </div>
+          </button>
 
-          <div className="p-3 rounded-xl bg-sky-50/80 border border-sky-200 text-sky-950 flex flex-col justify-between">
-            <div className="flex items-center justify-between text-sky-700 text-[11px]">
-              <span>Drying</span>
+          {/* Drying */}
+          <button
+            type="button"
+            onClick={() => navigateToCategory('DRYING')}
+            className="p-3 rounded-xl bg-sky-50/80 hover:bg-sky-100/90 border border-sky-200 hover:border-sky-300 text-sky-950 flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 group shadow-2xs hover:shadow-xs"
+            title="Filter Tickets by Drying"
+          >
+            <div className="flex items-center justify-between text-sky-700 group-hover:text-sky-900 text-[11px]">
+              <span className="font-semibold">Drying</span>
               <Wind size={13} />
             </div>
             <span className="text-xl font-extrabold font-mono mt-1">{stats.drying}</span>
-          </div>
+          </button>
 
-          <div className="p-3 rounded-xl bg-purple-50/80 border border-purple-200 text-purple-950 flex flex-col justify-between">
-            <div className="flex items-center justify-between text-purple-700 text-[11px]">
-              <span>Folding</span>
+          {/* Folding */}
+          <button
+            type="button"
+            onClick={() => navigateToCategory('FOLDING')}
+            className="p-3 rounded-xl bg-purple-50/80 hover:bg-purple-100/90 border border-purple-200 hover:border-purple-300 text-purple-950 flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 group shadow-2xs hover:shadow-xs"
+            title="Filter Tickets by Folding"
+          >
+            <div className="flex items-center justify-between text-purple-700 group-hover:text-purple-900 text-[11px]">
+              <span className="font-semibold">Folding</span>
               <Layers size={13} />
             </div>
             <span className="text-xl font-extrabold font-mono mt-1">4</span>
-          </div>
+          </button>
 
-          <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-950 flex flex-col justify-between">
-            <div className="flex items-center justify-between text-emerald-700 text-[11px]">
-              <span>Ready</span>
+          {/* Ready */}
+          <button
+            type="button"
+            onClick={() => navigateToCategory('READY')}
+            className="p-3 rounded-xl bg-emerald-50 hover:bg-emerald-100/90 border border-emerald-300 hover:border-emerald-400 text-emerald-950 flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 group shadow-2xs hover:shadow-xs"
+            title="Filter Tickets by Ready"
+          >
+            <div className="flex items-center justify-between text-emerald-700 group-hover:text-emerald-900 text-[11px]">
+              <span className="font-semibold">Ready</span>
               <Sparkles size={13} />
             </div>
             <span className="text-xl font-extrabold font-mono mt-1">{stats.ready}</span>
-          </div>
+          </button>
 
-          <div className="p-3 rounded-xl bg-teal-50 border border-teal-200 text-teal-950 flex flex-col justify-between">
-            <div className="flex items-center justify-between text-teal-700 text-[11px]">
-              <span>Completed</span>
+          {/* Completed */}
+          <button
+            type="button"
+            onClick={() => navigateToCategory('COMPLETED')}
+            className="p-3 rounded-xl bg-teal-50 hover:bg-teal-100/90 border border-teal-200 hover:border-teal-300 text-teal-950 flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 group shadow-2xs hover:shadow-xs"
+            title="Filter Tickets by Completed"
+          >
+            <div className="flex items-center justify-between text-teal-700 group-hover:text-teal-900 text-[11px]">
+              <span className="font-semibold">Completed</span>
               <CheckCircle2 size={13} />
             </div>
             <span className="text-xl font-extrabold font-mono mt-1">{stats.completed}</span>
-          </div>
+          </button>
 
         </div>
       </div>
@@ -250,9 +293,6 @@ export const AdminDashboard: React.FC = () => {
             <h2 className="font-extrabold text-base text-slate-900 tracking-tight">
               Active Laundry Orders
             </h2>
-            <p className="text-xs text-slate-500">
-              Manage in-progress washes, machine queues, and ready pickups
-            </p>
           </div>
 
           {/* Filters & Search */}
@@ -325,12 +365,6 @@ export const AdminDashboard: React.FC = () => {
                         <span>•</span>
                         <span className="font-mono font-bold text-emerald-700">₱{ticket.totalAmount}</span>
                       </div>
-
-                      {ticket.notes && (
-                        <p className="text-[11px] text-amber-700 mt-0.5 italic">
-                          Note: {ticket.notes}
-                        </p>
-                      )}
                     </div>
                   </div>
 
@@ -350,22 +384,13 @@ export const AdminDashboard: React.FC = () => {
                       </button>
                     )}
 
-                    {/* View Details Action */}
-                    <button
-                      onClick={() => setActiveDetailTicket(ticket)}
-                      className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-                      title="View complete details"
-                    >
-                      <Eye size={16} />
-                    </button>
-
-                    {/* Print Stub */}
+                    {/* View Claim Stub Action */}
                     <button
                       onClick={() => setActiveClaimStubTicket(ticket)}
-                      className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-                      title="Print Claim Stub"
+                      className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                      title="View Customer Claim Stub"
                     >
-                      <Printer size={16} />
+                      <Eye size={16} />
                     </button>
                   </div>
                 </div>

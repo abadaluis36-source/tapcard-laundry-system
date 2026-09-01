@@ -59,6 +59,8 @@ const AppContent: React.FC = () => {
           return <TicketManagement />;
         case 'customers':
           return <CustomerManagement />;
+        case 'services':
+          return <ServicesManagement />;
         case 'revenue':
           return <PaymentsLedger />;
         case 'expenses':
@@ -74,7 +76,7 @@ const AppContent: React.FC = () => {
       }
     }
 
-    // 4. Staff / Admin Operations Interface
+    // 4. Staff / Admin Operations Interface (Focused POS & Shift Floor)
     switch (adminTab) {
       case 'dashboard':
         return <AdminDashboard />;
@@ -84,16 +86,12 @@ const AppContent: React.FC = () => {
         return <CreateTicketView />;
       case 'customers':
         return <CustomerManagement />;
-      case 'services':
-        return <ServicesManagement />;
       case 'payments':
         return <PaymentsLedger />;
       case 'expenses':
         return <ExpensesManagement />;
       case 'reports':
         return <ReportsView />;
-      case 'settings':
-        return <SettingsView />;
       default:
         return <AdminDashboard />;
     }

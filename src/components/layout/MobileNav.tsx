@@ -63,33 +63,13 @@ export const MobileNav: React.FC = () => {
               {role === 'ADMIN' ? (
                 <>
                   <button
-                    onClick={() => { setAdminTab('services'); setIsMoreMenuOpen(false); }}
-                    className={`flex items-center gap-2 p-3 rounded-xl border text-left ${
-                      adminTab === 'services' ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-700 border-slate-200'
-                    }`}
-                  >
-                    <Tag size={16} className="text-emerald-500" />
-                    <span>Services & Pricing</span>
-                  </button>
-
-                  <button
-                    onClick={() => { setAdminTab('payments'); setIsMoreMenuOpen(false); }}
-                    className={`flex items-center gap-2 p-3 rounded-xl border text-left ${
-                      adminTab === 'payments' ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-700 border-slate-200'
-                    }`}
-                  >
-                    <DollarSign size={16} className="text-emerald-500" />
-                    <span>Payments / Ledger</span>
-                  </button>
-
-                  <button
                     onClick={() => { setAdminTab('expenses'); setIsMoreMenuOpen(false); }}
                     className={`flex items-center gap-2 p-3 rounded-xl border text-left ${
                       adminTab === 'expenses' ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-700 border-slate-200'
                     }`}
                   >
-                    <Boxes size={16} className="text-emerald-500" />
-                    <span>Inventory & Stocks</span>
+                    <Receipt size={16} className="text-rose-500" />
+                    <span>Expense Tracker</span>
                   </button>
 
                   <button
@@ -101,27 +81,37 @@ export const MobileNav: React.FC = () => {
                     <FileText size={16} className="text-sky-500" />
                     <span>Operational Reports</span>
                   </button>
-
-                  <button
-                    onClick={() => { setAdminTab('settings'); setIsMoreMenuOpen(false); }}
-                    className={`flex items-center gap-2 p-3 rounded-xl border text-left ${
-                      adminTab === 'settings' ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-700 border-slate-200'
-                    }`}
-                  >
-                    <SettingsIcon size={16} className="text-slate-500" />
-                    <span>Shop Settings</span>
-                  </button>
                 </>
               ) : (
                 <>
+                  <button
+                    onClick={() => { setOwnerTab('services'); setIsMoreMenuOpen(false); }}
+                    className={`flex items-center gap-2 p-3 rounded-xl border text-left ${
+                      ownerTab === 'services' ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-700 border-slate-200'
+                    }`}
+                  >
+                    <Tag size={16} className="text-indigo-500" />
+                    <span>Services & Rates</span>
+                  </button>
+
+                  <button
+                    onClick={() => { setOwnerTab('customers'); setIsMoreMenuOpen(false); }}
+                    className={`flex items-center gap-2 p-3 rounded-xl border text-left ${
+                      ownerTab === 'customers' ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-700 border-slate-200'
+                    }`}
+                  >
+                    <Users size={16} className="text-indigo-500" />
+                    <span>Customer Retention</span>
+                  </button>
+
                   <button
                     onClick={() => { setOwnerTab('expenses'); setIsMoreMenuOpen(false); }}
                     className={`flex items-center gap-2 p-3 rounded-xl border text-left ${
                       ownerTab === 'expenses' ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-700 border-slate-200'
                     }`}
                   >
-                    <Boxes size={16} className="text-emerald-500" />
-                    <span>Inventory & Costs</span>
+                    <Receipt size={16} className="text-rose-500" />
+                    <span>Expense Tracker</span>
                   </button>
 
                   <button
@@ -136,12 +126,12 @@ export const MobileNav: React.FC = () => {
 
                   <button
                     onClick={() => { setOwnerTab('settings'); setIsMoreMenuOpen(false); }}
-                    className={`flex items-center gap-2 p-3 rounded-xl border text-left ${
+                    className={`flex items-center gap-2 p-3 rounded-xl border text-left col-span-2 ${
                       ownerTab === 'settings' ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-700 border-slate-200'
                     }`}
                   >
                     <SettingsIcon size={16} className="text-slate-500" />
-                    <span>Business Config</span>
+                    <span>Store & Business Settings</span>
                   </button>
                 </>
               )}
@@ -197,14 +187,14 @@ export const MobileNav: React.FC = () => {
             </button>
 
             <button
-              id="mobile-nav-admin-customers"
-              onClick={() => setAdminTab('customers')}
+              id="mobile-nav-admin-payments"
+              onClick={() => setAdminTab('payments')}
               className={`flex flex-col items-center gap-0.5 py-1 px-1.5 sm:px-3 rounded-xl transition-colors ${
-                adminTab === 'customers' ? 'text-emerald-600 font-bold' : 'text-slate-500'
+                adminTab === 'payments' ? 'text-emerald-600 font-bold' : 'text-slate-500'
               }`}
             >
-              <Users size={18} />
-              <span className="text-[10px]">Customers</span>
+              <DollarSign size={18} />
+              <span className="text-[10px]">Payments</span>
             </button>
 
             <button

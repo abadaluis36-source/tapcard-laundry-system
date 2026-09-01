@@ -87,20 +87,29 @@ export const ServicesManagement: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-700 border border-indigo-200 uppercase tracking-wider">
+              Boss / Owner Authority
+            </span>
+            <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+              <Sparkles size={12} />
+              Connected to Staff POS Counter
+            </span>
+          </div>
           <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
             Services & Pricing Catalog
           </h1>
           <p className="text-xs text-slate-500">
-            Configure rates per kilogram, garment piece, and specialty laundry processes
+            Configure rates per kilogram, garment piece, and turnaround times. Changes reflect immediately on counter cashiers.
           </p>
         </div>
 
         <button
           onClick={openAddModal}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-xs flex items-center gap-1.5 active:scale-95 self-start sm:self-auto"
+          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-xs flex items-center gap-1.5 active:scale-95 self-start sm:self-auto"
         >
           <Plus size={15} />
-          <span>+ Add Service</span>
+          <span>+ Add New Service</span>
         </button>
       </div>
 

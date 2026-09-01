@@ -37,26 +37,25 @@ export const Sidebar: React.FC = () => {
     setAuthModalTargetRole
   } = useLaundry();
 
-  // Admin / Staff navigation items
+  // Admin / Staff navigation items (Focused on Counter POS & Shift Operations)
   const adminNavItems = [
     { id: 'dashboard' as AdminTab, label: 'Dashboard', icon: LayoutDashboard },
     { id: 'tickets' as AdminTab, label: 'Laundry Tickets', icon: TicketIcon, badge: pendingOrdersCount },
     { id: 'create-ticket' as AdminTab, label: 'Create Ticket (POS)', icon: PlusCircle, isHighlight: true },
     { id: 'customers' as AdminTab, label: 'Customers', icon: Users },
-    { id: 'services' as AdminTab, label: 'Services & Pricing', icon: Tag },
     { id: 'payments' as AdminTab, label: 'Payments / Ledger', icon: CreditCard },
-    { id: 'expenses' as AdminTab, label: 'Inventory & Expenses', icon: Boxes, badge: lowStockItemsCount > 0 ? `${lowStockItemsCount} Low` : undefined },
+    { id: 'expenses' as AdminTab, label: 'Expense Tracker', icon: Receipt },
     { id: 'reports' as AdminTab, label: 'Operational Reports', icon: FileText },
-    { id: 'settings' as AdminTab, label: 'Shop Settings', icon: SettingsIcon },
   ];
 
-  // Boss / Owner navigation items
+  // Boss / Owner navigation items (Full Executive Management & Store Configuration)
   const ownerNavItems = [
     { id: 'dashboard' as OwnerTab, label: 'Executive Dashboard', icon: LayoutDashboard },
     { id: 'tickets' as OwnerTab, label: 'All Orders & Tickets', icon: TicketIcon, badge: tickets.length },
     { id: 'customers' as OwnerTab, label: 'Customer Retention', icon: Users },
+    { id: 'services' as OwnerTab, label: 'Services & Pricing', icon: Tag },
     { id: 'revenue' as OwnerTab, label: 'Revenue & Ledger', icon: DollarSign },
-    { id: 'expenses' as OwnerTab, label: 'Inventory & Costs', icon: Boxes, badge: lowStockItemsCount > 0 ? `${lowStockItemsCount} Low` : undefined },
+    { id: 'expenses' as OwnerTab, label: 'Expense Tracker', icon: Receipt },
     { id: 'analytics' as OwnerTab, label: 'Business Analytics', icon: BarChart3 },
     { id: 'reports' as OwnerTab, label: 'Financial Reports', icon: FileText },
     { id: 'settings' as OwnerTab, label: 'Business Settings', icon: SettingsIcon },

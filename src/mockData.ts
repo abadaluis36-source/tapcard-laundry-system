@@ -660,7 +660,8 @@ export const INITIAL_EXPENSES: Expense[] = [
     id: 'exp-1',
     category: 'Detergent & Chemicals',
     amount: 1200,
-    description: 'Ariel Professional Powder (25kg drum bulk restocking)',
+    description: 'Ariel Professional Powder (25kg drum)',
+    pieces: 1,
     date: '2026-08-31',
     recordedBy: 'Boss Dennis',
     referenceNo: 'INV-7819'
@@ -669,7 +670,8 @@ export const INITIAL_EXPENSES: Expense[] = [
     id: 'exp-2',
     category: 'Electricity',
     amount: 4500,
-    description: 'Meralco Commercial Power partial deposit & weekly reserve',
+    description: 'Meralco Commercial Power deposit',
+    pieces: 1,
     date: '2026-08-30',
     recordedBy: 'Boss Dennis',
     referenceNo: 'MER-882193'
@@ -678,7 +680,8 @@ export const INITIAL_EXPENSES: Expense[] = [
     id: 'exp-3',
     category: 'Water',
     amount: 2100,
-    description: 'Maynilad commercial water utility bill',
+    description: 'Maynilad commercial water utility',
+    pieces: 1,
     date: '2026-08-29',
     recordedBy: 'Boss Dennis',
     referenceNo: 'MAY-44019'
@@ -687,7 +690,8 @@ export const INITIAL_EXPENSES: Expense[] = [
     id: 'exp-4',
     category: 'Packaging & Supplies',
     amount: 850,
-    description: 'Clear laundry bags (500pcs) & garment tags roll',
+    description: 'Clear laundry bags & garment tags roll',
+    pieces: 5,
     date: '2026-08-31',
     recordedBy: 'Staff Arlene',
     referenceNo: 'OR-55421'
@@ -696,7 +700,8 @@ export const INITIAL_EXPENSES: Expense[] = [
     id: 'exp-5',
     category: 'Detergent & Chemicals',
     amount: 750,
-    description: 'Downy Mystique & Floral Fabric Conditioner concentrate (5L)',
+    description: 'Downy Mystique & Floral Fabric Conditioner (5L)',
+    pieces: 2,
     date: '2026-08-28',
     recordedBy: 'Staff Mark',
     referenceNo: 'OR-55319'
@@ -705,7 +710,8 @@ export const INITIAL_EXPENSES: Expense[] = [
     id: 'exp-6',
     category: 'Equipment Maintenance',
     amount: 1400,
-    description: 'Dryer lint vent exhaust cleaning & belt checkup on Washer #2',
+    description: 'Dryer lint vent exhaust cleaning & belt checkup',
+    pieces: 2,
     date: '2026-08-27',
     recordedBy: 'Boss Dennis',
     referenceNo: 'SVC-1029'
@@ -715,6 +721,7 @@ export const INITIAL_EXPENSES: Expense[] = [
     category: 'Rent',
     amount: 18000,
     description: 'Commercial shop space monthly lease amortization',
+    pieces: 1,
     date: '2026-08-01',
     recordedBy: 'Boss Dennis',
     referenceNo: 'LSE-202608'
@@ -724,6 +731,7 @@ export const INITIAL_EXPENSES: Expense[] = [
     category: 'Staff Wages',
     amount: 13700,
     description: 'Bi-monthly staff wages (2 operators + 1 specialist)',
+    pieces: 3,
     date: '2026-08-15',
     recordedBy: 'Boss Dennis',
     referenceNo: 'PAY-20260815'

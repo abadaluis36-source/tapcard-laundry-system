@@ -256,10 +256,19 @@ export const CustomerTracker: React.FC = () => {
     >
       <div className="w-full max-w-md space-y-4">
         
-        {/* Top Header */}
-        <div className="text-center pb-1">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            TAPCARD LAUNDRY SHOP
+        {/* Navigation & Ticket ID Input Bar */}
+        <div className="flex items-center justify-between gap-2 pb-1">
+          <button
+            id="back-to-ticket-entry-btn"
+            onClick={handleBackToEntry}
+            className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 py-1.5 px-3 rounded-xl transition-all shadow-2xs cursor-pointer"
+          >
+            <ArrowLeft size={14} />
+            <span>Enter Another Ticket ID</span>
+          </button>
+
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            TAPCARD LAUNDRY
           </span>
         </div>
 
