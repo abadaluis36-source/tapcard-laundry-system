@@ -1,0 +1,6 @@
+{
+  "name": "TAPCARD LAUNDRY SHOP — Management System",
+  "description": "Mobile-first and desktop-ready management platform for TAPCARD LAUNDRY SHOP operations, customer ticket tracking, POS, financial ledger, and analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
