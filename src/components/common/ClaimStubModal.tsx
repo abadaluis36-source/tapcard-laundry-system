@@ -94,7 +94,7 @@ export const ClaimStubModal: React.FC = () => {
               <span>Amount</span>
             </div>
             <div className="divide-y divide-slate-100 bg-white">
-              {ticket.items.map((item, idx) => (
+              {(ticket.items || []).map((item, idx) => (
                 <div key={idx} className="px-3 py-2 flex justify-between items-center">
                   <div>
                     <span className="font-semibold text-slate-800 block">{item.name}</span>

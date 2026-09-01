@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLaundry } from '../../context/LaundryContext';
 import { LaundryStatus, PaymentMethod, PaymentStatus, Ticket } from '../../types';
 import { StatusBadge, PaymentBadge } from '../common/StatusBadge';
@@ -27,7 +27,8 @@ export const TicketDetailModal: React.FC = () => {
     setActiveDetailTicket, 
     updateTicketStatus, 
     updateTicketPayment,
-    setActiveClaimStubTicket 
+    setActiveClaimStubTicket,
+    setActiveSettlementTicket 
   } = useLaundry();
 
   const [customNote, setCustomNote] = useState('');
@@ -35,6 +36,14 @@ export const TicketDetailModal: React.FC = () => {
   const [showPaymentEditor, setShowPaymentEditor] = useState(false);
   const [editPaymentStatus, setEditPaymentStatus] = useState<PaymentStatus>(activeDetailTicket?.paymentStatus || 'PAID');
   const [editPaymentMethod, setEditPaymentMethod] = useState<PaymentMethod>(activeDetailTicket?.paymentMethod || 'CASH');
+
+  useEffect(() => {
+    if (activeDetailTicket) {
+      setEditPaymentStatus(activeDetailTicket.paymentStatus);
+      setEditPaymentMethod(activeDetailTicket.paymentMethod);
+      setShowPaymentEditor(false);
+    }
+  }, [activeDetailTicket]);
 
   if (!activeDetailTicket) return null;
 
@@ -64,6 +73,10 @@ export const TicketDetailModal: React.FC = () => {
   const currentStageIndex = getStageIndex(ticket.status);
 
   const handleUpdateStatus = (newStatus: LaundryStatus) => {
+    if (newStatus === 'COMPLETED' && (ticket.paymentStatus === 'UNPAID' || ticket.paymentStatus === 'PARTIAL')) {
+      setActiveSettlementTicket(ticket);
+      return;
+    }
     setIsUpdatingStatus(true);
     updateTicketStatus(ticket.id, newStatus, customNote || undefined);
     setCustomNote('');
@@ -249,7 +262,7 @@ export const TicketDetailModal: React.FC = () => {
                 <span>Subtotal</span>
               </div>
               <div className="divide-y divide-slate-100 bg-white">
-                {ticket.items.map((item, idx) => (
+                {(ticket.items || []).map((item, idx) => (
                   <div key={idx} className="px-3.5 py-2.5 flex justify-between items-center">
                     <div>
                       <span className="font-bold text-slate-800 block">{item.name}</span>
@@ -281,13 +294,24 @@ export const TicketDetailModal: React.FC = () => {
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs">
             <div className="flex items-center justify-between">
               <span className="font-extrabold uppercase text-slate-800 text-xs">Payment Information</span>
-              <button
-                type="button"
-                onClick={() => setShowPaymentEditor(!showPaymentEditor)}
-                className="text-xs font-bold text-emerald-600 hover:text-emerald-700 underline"
-              >
-                {showPaymentEditor ? 'Cancel' : 'Edit / Record Payment'}
-              </button>
+              <div className="flex items-center gap-2">
+                {ticket.paymentStatus !== 'PAID' && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveSettlementTicket(ticket)}
+                    className="px-2.5 py-1 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors cursor-pointer shadow-2xs"
+                  >
+                    Settle & Settle Balance
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowPaymentEditor(!showPaymentEditor)}
+                  className="text-xs font-bold text-slate-600 hover:text-slate-900 underline cursor-pointer"
+                >
+                  {showPaymentEditor ? 'Cancel' : 'Edit Manually'}
+                </button>
+              </div>
             </div>
 
             {showPaymentEditor ? (
@@ -346,7 +370,7 @@ export const TicketDetailModal: React.FC = () => {
               Status Change History & Staff Logs
             </h4>
             <div className="space-y-1.5 max-h-36 overflow-y-auto">
-              {ticket.statusHistory.map((hist, idx) => (
+              {(ticket.statusHistory || []).map((hist, idx) => (
                 <div key={idx} className="p-2 bg-slate-50 rounded-lg border border-slate-200 text-xs flex items-start justify-between">
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2">

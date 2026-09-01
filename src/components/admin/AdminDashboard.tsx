@@ -13,26 +13,43 @@ import { TicketManagement } from './TicketManagement';
 
 export const AdminDashboard: React.FC = () => {
   const { 
+    tickets,
     ticketStatusFilter,
     setTicketStatusFilter
   } = useLaundry();
 
-  // Status counts matching exact spec: 47 Orders, 15 Pending, 8 Washing, 6 Drying, 9 Ready, 32 Completed
-  const stats = {
-    todayOrders: 47,
-    pending: 15,
-    washing: 8,
-    drying: 6,
-    ready: 9,
-    completed: 32
-  };
+  const counts = React.useMemo(() => {
+    return {
+      total: tickets.length,
+      pending: tickets.filter(t => t.status === 'RECEIVED').length,
+      washing: tickets.filter(t => t.status === 'WASHING').length,
+      drying: tickets.filter(t => t.status === 'DRYING').length,
+      folding: tickets.filter(t => t.status === 'FOLDING').length,
+      ready: tickets.filter(t => t.status === 'READY').length,
+      completed: tickets.filter(t => t.status === 'COMPLETED').length,
+    };
+  }, [tickets]);
 
   const handleFilterSelect = (status: LaundryStatus | 'ALL') => {
-    setTicketStatusFilter(status);
+    if (ticketStatusFilter === status) {
+      setTicketStatusFilter('ALL');
+    } else {
+      setTicketStatusFilter(status);
+    }
   };
 
   return (
     <div id="admin-dashboard-view" className="space-y-4">
+      {/* Header matching Payments Ledger style */}
+      <div>
+        <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
+          Admin Dashboard Overview
+        </h1>
+        <p className="text-xs text-slate-500 mt-0.5">
+          Real-time workflow pipeline, operational queues, and live laundry ticket processing
+        </p>
+      </div>
+
       {/* Operational Queue Overview */}
       <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-2.5">
         <div className="flex items-center justify-between">
@@ -49,7 +66,7 @@ export const AdminDashboard: React.FC = () => {
             }`}
             title="Click to view all jobs"
           >
-            47 Total Jobs
+            {counts.total} Total Jobs
           </button>
         </div>
 
@@ -69,7 +86,9 @@ export const AdminDashboard: React.FC = () => {
               <span className="font-semibold truncate">Pending</span>
               <Clock size={12} />
             </div>
-            <span className="text-lg sm:text-xl font-extrabold font-mono text-slate-800 mt-1">15</span>
+            <span className="text-lg sm:text-xl font-extrabold font-mono text-slate-800 mt-1">
+              {counts.pending}
+            </span>
           </button>
 
           {/* Washing */}
@@ -87,7 +106,9 @@ export const AdminDashboard: React.FC = () => {
               <span className="font-semibold truncate">Washing</span>
               <RotateCw size={12} className="animate-spin" />
             </div>
-            <span className="text-lg sm:text-xl font-extrabold font-mono mt-1">{stats.washing}</span>
+            <span className="text-lg sm:text-xl font-extrabold font-mono mt-1">
+              {counts.washing}
+            </span>
           </button>
 
           {/* Drying */}
@@ -105,7 +126,9 @@ export const AdminDashboard: React.FC = () => {
               <span className="font-semibold truncate">Drying</span>
               <Wind size={12} />
             </div>
-            <span className="text-lg sm:text-xl font-extrabold font-mono mt-1">{stats.drying}</span>
+            <span className="text-lg sm:text-xl font-extrabold font-mono mt-1">
+              {counts.drying}
+            </span>
           </button>
 
           {/* Folding */}
@@ -123,7 +146,9 @@ export const AdminDashboard: React.FC = () => {
               <span className="font-semibold truncate">Folding</span>
               <Layers size={12} />
             </div>
-            <span className="text-lg sm:text-xl font-extrabold font-mono mt-1">4</span>
+            <span className="text-lg sm:text-xl font-extrabold font-mono mt-1">
+              {counts.folding}
+            </span>
           </button>
 
           {/* Ready */}
@@ -141,7 +166,9 @@ export const AdminDashboard: React.FC = () => {
               <span className="font-semibold truncate">Ready</span>
               <Sparkles size={12} />
             </div>
-            <span className="text-lg sm:text-xl font-extrabold font-mono mt-1">{stats.ready}</span>
+            <span className="text-lg sm:text-xl font-extrabold font-mono mt-1">
+              {counts.ready}
+            </span>
           </button>
 
           {/* Completed */}
@@ -159,7 +186,9 @@ export const AdminDashboard: React.FC = () => {
               <span className="font-semibold truncate">Done</span>
               <CheckCircle2 size={12} />
             </div>
-            <span className="text-lg sm:text-xl font-extrabold font-mono mt-1">{stats.completed}</span>
+            <span className="text-lg sm:text-xl font-extrabold font-mono mt-1">
+              {counts.completed}
+            </span>
           </button>
         </div>
       </div>

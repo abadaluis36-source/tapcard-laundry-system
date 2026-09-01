@@ -28,6 +28,8 @@ export const TicketManagement: React.FC<TicketManagementProps> = ({ hideHeader =
     setIsCreateTicketOpen, 
     setActiveDetailTicket, 
     setActiveClaimStubTicket,
+    activeSettlementTicket,
+    setActiveSettlementTicket,
     updateTicketStatus,
     setAdminTab,
     ticketStatusFilter,
@@ -37,6 +39,14 @@ export const TicketManagement: React.FC<TicketManagementProps> = ({ hideHeader =
   const [searchQuery, setSearchQuery] = useState('');
   const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'PAID' | 'UNPAID' | 'PARTIAL'>('ALL');
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+
+  const handleStatusChange = (tkt: Ticket, newStatus: LaundryStatus) => {
+    if (newStatus === 'COMPLETED' && (tkt.paymentStatus === 'UNPAID' || tkt.paymentStatus === 'PARTIAL')) {
+      setActiveSettlementTicket(tkt);
+    } else {
+      updateTicketStatus(tkt.id, newStatus);
+    }
+  };
 
   // Filter and sort tickets
   const filteredTickets = tickets.filter((t) => {
@@ -52,6 +62,27 @@ export const TicketManagement: React.FC<TicketManagementProps> = ({ hideHeader =
 
     return matchesSearch && matchesStatus && matchesPayment;
   });
+
+  // Calculate contextual counts based on current status filter
+  const stageScopedTickets = ticketStatusFilter === 'ALL'
+    ? tickets
+    : tickets.filter(t => t.status === ticketStatusFilter);
+
+  const handlePaymentFilterClick = (key: 'ALL' | 'PAID' | 'UNPAID' | 'PARTIAL') => {
+    if (paymentFilter === key && key !== 'ALL') {
+      setPaymentFilter('ALL');
+    } else {
+      setPaymentFilter(key);
+    }
+  };
+
+  const handleStatusFilterClick = (status: LaundryStatus | 'ALL') => {
+    if (ticketStatusFilter === status && status !== 'ALL') {
+      setTicketStatusFilter('ALL');
+    } else {
+      setTicketStatusFilter(status);
+    }
+  };
 
   const statuses: { key: LaundryStatus | 'ALL'; label: string }[] = [
     { key: 'ALL', label: 'All Tickets' },
@@ -82,7 +113,7 @@ export const TicketManagement: React.FC<TicketManagementProps> = ({ hideHeader =
       )}
 
       {/* Search and Filters Bar - Compact layout */}
-      <div className="bg-white p-2.5 sm:p-3.5 rounded-2xl border border-slate-200 shadow-2xs space-y-2">
+      <div className="bg-white p-2.5 sm:p-3.5 rounded-2xl border border-slate-200 shadow-2xs space-y-2.5">
         
         {/* Search Bar + Quick Payment filter in single line / compact stack */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
@@ -100,27 +131,32 @@ export const TicketManagement: React.FC<TicketManagementProps> = ({ hideHeader =
           {/* Payment quick chips */}
           <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl shrink-0 overflow-x-auto">
             {[
-              { key: 'ALL', label: 'All' },
-              { key: 'PAID', label: 'Paid', dot: 'bg-emerald-500' },
-              { key: 'UNPAID', label: 'Unpaid', dot: 'bg-rose-500' },
-              { key: 'PARTIAL', label: 'Partial', dot: 'bg-amber-500' },
+              { key: 'ALL', label: 'All', count: stageScopedTickets.length },
+              { key: 'PAID', label: 'Paid', dot: 'bg-emerald-500', count: stageScopedTickets.filter(t => t.paymentStatus === 'PAID').length },
+              { key: 'UNPAID', label: 'Unpaid', dot: 'bg-rose-500', count: stageScopedTickets.filter(t => t.paymentStatus === 'UNPAID').length },
+              { key: 'PARTIAL', label: 'Partial', dot: 'bg-amber-500', count: stageScopedTickets.filter(t => t.paymentStatus === 'PARTIAL').length },
             ].map((p) => {
               const isSelected = paymentFilter === p.key;
               return (
                 <button
                   key={p.key}
                   id={`payment-filter-${p.key.toLowerCase()}`}
-                  onClick={() => setPaymentFilter(p.key as any)}
-                  className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap ${
+                  type="button"
+                  onClick={() => handlePaymentFilterClick(p.key as any)}
+                  className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                     isSelected
-                      ? 'bg-white text-slate-900 shadow-2xs'
+                      ? 'bg-white text-slate-900 shadow-2xs ring-1 ring-slate-300'
                       : 'text-slate-500 hover:text-slate-900'
                   }`}
+                  title={isSelected ? `Click to clear ${p.label} filter` : `Filter by ${p.label}`}
                 >
                   {p.dot && (
                     <span className={`w-1.5 h-1.5 rounded-full ${p.dot}`} />
                   )}
                   <span>{p.label}</span>
+                  <span className={`text-[10px] font-mono px-1 rounded ${isSelected ? 'bg-slate-100 text-slate-900' : 'text-slate-400'}`}>
+                    {p.count}
+                  </span>
                 </button>
               );
             })}
@@ -141,10 +177,11 @@ export const TicketManagement: React.FC<TicketManagementProps> = ({ hideHeader =
                   <button
                     key={st.key}
                     id={`filter-tab-${st.key.toLowerCase()}`}
-                    onClick={() => setTicketStatusFilter(st.key)}
+                    type="button"
+                    onClick={() => handleStatusFilterClick(st.key)}
                     className={`px-2 py-1 rounded-lg text-[10px] sm:text-xs font-bold transition-all flex items-center justify-between gap-1 cursor-pointer ${
                       isSelected
-                        ? 'bg-slate-900 text-white shadow-xs'
+                        ? 'bg-slate-900 text-white shadow-xs ring-1 ring-slate-900'
                         : 'bg-slate-100/90 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
@@ -229,7 +266,7 @@ export const TicketManagement: React.FC<TicketManagementProps> = ({ hideHeader =
                         <StatusBadge status={tkt.status} size="sm" />
                         <select
                           value={tkt.status}
-                          onChange={(e) => updateTicketStatus(tkt.id, e.target.value as LaundryStatus)}
+                          onChange={(e) => handleStatusChange(tkt, e.target.value as LaundryStatus)}
                           className="text-[10px] py-1 px-1.5 rounded-lg border border-slate-200 bg-white font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
                         >
                           <option value="RECEIVED">⚪ RECEIVED</option>
@@ -266,8 +303,31 @@ export const TicketManagement: React.FC<TicketManagementProps> = ({ hideHeader =
               ) : (
                 <tr>
                   <td colSpan={8} className="py-8 text-center text-slate-500">
-                    <p className="font-semibold text-xs">No laundry tickets found</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Try clearing filters or search criteria.</p>
+                    <p className="font-bold text-xs text-slate-700">No laundry tickets match these filters</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      {paymentFilter !== 'ALL' ? `Filtered by ${paymentFilter}. ` : ''}
+                      {ticketStatusFilter !== 'ALL' ? `Stage: ${ticketStatusFilter}. ` : ''}
+                    </p>
+                    <div className="mt-2.5 flex items-center justify-center gap-2">
+                      {ticketStatusFilter !== 'ALL' && (
+                        <button
+                          type="button"
+                          onClick={() => setTicketStatusFilter('ALL')}
+                          className="px-2.5 py-1 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg cursor-pointer transition-colors"
+                        >
+                          Show All Stages
+                        </button>
+                      )}
+                      {paymentFilter !== 'ALL' && (
+                        <button
+                          type="button"
+                          onClick={() => setPaymentFilter('ALL')}
+                          className="px-2.5 py-1 text-xs font-bold bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-lg cursor-pointer transition-colors"
+                        >
+                          Show All Payment Statuses
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               )}
@@ -315,7 +375,7 @@ export const TicketManagement: React.FC<TicketManagementProps> = ({ hideHeader =
                   <StatusBadge status={tkt.status} size="sm" />
                   <select
                     value={tkt.status}
-                    onChange={(e) => updateTicketStatus(tkt.id, e.target.value as LaundryStatus)}
+                    onChange={(e) => handleStatusChange(tkt, e.target.value as LaundryStatus)}
                     className="text-[11px] py-1 px-1.5 rounded-lg border border-slate-200 bg-slate-50 font-bold text-slate-700 flex-1 focus:outline-none cursor-pointer truncate"
                   >
                     <option value="RECEIVED">⚪ Received</option>
@@ -339,9 +399,24 @@ export const TicketManagement: React.FC<TicketManagementProps> = ({ hideHeader =
             </div>
           ))
         ) : (
-          <div className="bg-white p-6 rounded-xl border border-slate-200 text-center text-slate-500">
-            <p className="font-bold text-xs">No laundry tickets found</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">Try resetting the status filter.</p>
+          <div className="bg-white p-6 rounded-xl border border-slate-200 text-center text-slate-500 space-y-2">
+            <p className="font-bold text-xs text-slate-700">No laundry tickets match these filters</p>
+            <p className="text-[10px] text-slate-400">
+              {paymentFilter !== 'ALL' ? `Payment: ${paymentFilter}. ` : ''}
+              {ticketStatusFilter !== 'ALL' ? `Stage: ${ticketStatusFilter}. ` : ''}
+            </p>
+            <div className="flex items-center justify-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setPaymentFilter('ALL');
+                  setTicketStatusFilter('ALL');
+                }}
+                className="px-3 py-1.5 text-xs font-bold bg-slate-900 text-white rounded-lg cursor-pointer"
+              >
+                Reset All Filters
+              </button>
+            </div>
           </div>
         )}
       </div>

@@ -67,6 +67,8 @@ interface LaundryContextType {
   setActiveDetailTicket: (ticket: Ticket | null) => void;
   activeClaimStubTicket: Ticket | null;
   setActiveClaimStubTicket: (ticket: Ticket | null) => void;
+  activeSettlementTicket: Ticket | null;
+  setActiveSettlementTicket: (ticket: Ticket | null) => void;
   ticketStatusFilter: LaundryStatus | 'ALL';
   setTicketStatusFilter: (status: LaundryStatus | 'ALL') => void;
   
@@ -182,6 +184,7 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isCreateTicketOpen, setIsCreateTicketOpen] = useState<boolean>(false);
   const [activeDetailTicket, setActiveDetailTicket] = useState<Ticket | null>(null);
   const [activeClaimStubTicket, setActiveClaimStubTicket] = useState<Ticket | null>(null);
+  const [activeSettlementTicket, setActiveSettlementTicket] = useState<Ticket | null>(null);
   const [ticketStatusFilter, setTicketStatusFilter] = useState<LaundryStatus | 'ALL'>('ALL');
 
   // Sync selected customer ticket whenever tickets state changes
@@ -291,13 +294,22 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return newTicket;
   };
 
-  const updateTicketStatus = (ticketId: string, newStatus: LaundryStatus, note?: string) => {
+  const getFormattedDateTime = () => {
     const now = new Date();
-    const timeString = now.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
-    }) + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    let hours = now.getHours();
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const strHours = String(hours).padStart(2, '0');
+    return `${year}-${month}-${day} ${strHours}:${minutes} ${ampm}`;
+  };
+
+  const updateTicketStatus = (ticketId: string, newStatus: LaundryStatus, note?: string) => {
+    const timeString = getFormattedDateTime();
 
     let updatedTicketNumber = '';
     let customerName = '';
@@ -307,8 +319,9 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (tkt.id === ticketId) {
           updatedTicketNumber = tkt.ticketNumber;
           customerName = tkt.customerName;
+          const currentHist = Array.isArray(tkt.statusHistory) ? tkt.statusHistory : [];
           const newHistory = [
-            ...tkt.statusHistory,
+            ...currentHist,
             {
               status: newStatus,
               timestamp: timeString,
@@ -328,13 +341,15 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       })
     );
 
-    // If currently active in detail modal, update that as well
-    if (activeDetailTicket && activeDetailTicket.id === ticketId) {
-      setActiveDetailTicket(prev => prev ? {
+    // If currently active in detail modal, update safely
+    setActiveDetailTicket((prev) => {
+      if (!prev || prev.id !== ticketId) return prev;
+      const currentHist = Array.isArray(prev.statusHistory) ? prev.statusHistory : [];
+      return {
         ...prev,
         status: newStatus,
         statusHistory: [
-          ...prev.statusHistory,
+          ...currentHist,
           {
             status: newStatus,
             timestamp: timeString,
@@ -343,24 +358,58 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
           }
         ],
         completedAt: newStatus === 'COMPLETED' ? timeString : prev.completedAt
-      } : null);
-    }
+      };
+    });
+
+    // Also sync selectedCustomerTicket and activeClaimStubTicket if open
+    setSelectedCustomerTicket((prev) => {
+      if (!prev || prev.id !== ticketId) return prev;
+      const currentHist = Array.isArray(prev.statusHistory) ? prev.statusHistory : [];
+      return {
+        ...prev,
+        status: newStatus,
+        statusHistory: [
+          ...currentHist,
+          {
+            status: newStatus,
+            timestamp: timeString,
+            updatedBy: 'Staff On Duty',
+            note: note || `Status updated to ${newStatus.replace('_', ' ')}`
+          }
+        ],
+        completedAt: newStatus === 'COMPLETED' ? timeString : prev.completedAt
+      };
+    });
+
+    setActiveClaimStubTicket((prev) => {
+      if (!prev || prev.id !== ticketId) return prev;
+      const currentHist = Array.isArray(prev.statusHistory) ? prev.statusHistory : [];
+      return {
+        ...prev,
+        status: newStatus,
+        statusHistory: [
+          ...currentHist,
+          {
+            status: newStatus,
+            timestamp: timeString,
+            updatedBy: 'Staff On Duty',
+            note: note || `Status updated to ${newStatus.replace('_', ' ')}`
+          }
+        ],
+        completedAt: newStatus === 'COMPLETED' ? timeString : prev.completedAt
+      };
+    });
 
     const readableStatus = newStatus === 'READY' ? 'READY FOR PICKUP' : newStatus;
     addToast(
-      `✓ Ticket ${updatedTicketNumber} updated to ${readableStatus}`,
-      `Customer ${customerName}'s order is now marked as ${readableStatus}. Live tracking updated.`,
+      `✓ Ticket ${updatedTicketNumber || ticketId} updated to ${readableStatus}`,
+      customerName ? `Customer ${customerName}'s order is now marked as ${readableStatus}. Live tracking updated.` : `Order status updated to ${readableStatus}.`,
       newStatus === 'READY' ? 'info' : 'success'
     );
   };
 
   const updateTicketPayment = (ticketId: string, paymentStatus: PaymentStatus, amountPaid: number, method: PaymentMethod) => {
-    const now = new Date();
-    const timeString = now.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
-    }) + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const timeString = getFormattedDateTime();
 
     setTickets((prev) =>
       prev.map((tkt) => {
@@ -392,7 +441,37 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       })
     );
 
-    addToast('Payment Recorded', `Payment updated for ticket.`, 'success');
+    setActiveDetailTicket((prev) => {
+      if (!prev || prev.id !== ticketId) return prev;
+      return {
+        ...prev,
+        paymentStatus,
+        amountPaid,
+        paymentMethod: method
+      };
+    });
+
+    setSelectedCustomerTicket((prev) => {
+      if (!prev || prev.id !== ticketId) return prev;
+      return {
+        ...prev,
+        paymentStatus,
+        amountPaid,
+        paymentMethod: method
+      };
+    });
+
+    setActiveClaimStubTicket((prev) => {
+      if (!prev || prev.id !== ticketId) return prev;
+      return {
+        ...prev,
+        paymentStatus,
+        amountPaid,
+        paymentMethod: method
+      };
+    });
+
+    addToast('Payment Recorded', `Payment status updated to ${paymentStatus}.`, 'success');
   };
 
   const addCustomer = (customerData: Omit<Customer, 'id' | 'totalOrders' | 'totalSpent' | 'lastOrderDate' | 'activeTicketCount'>): Customer => {
@@ -696,14 +775,25 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  // Derived financial computations
-  const todayRevenue = 8450;
-  const monthlyRevenue = 185300;
-  const todayOrdersCount = 47;
-  const pendingOrdersCount = tickets.filter(t => t.status !== 'COMPLETED' && t.status !== 'CANCELLED').length || 15;
-  const completedOrdersCount = 32;
-  const todayExpensesTotal = 2350;
-  const monthlyExpensesTotal = 42500;
+  // Dynamic financial computations from real system state
+  const todayRevenue = React.useMemo(() => {
+    // Sum all collected payments
+    return payments.reduce((sum, p) => sum + (p.paymentStatus === 'PAID' ? p.amount : 0), 0);
+  }, [payments]);
+
+  const monthlyRevenue = React.useMemo(() => {
+    return todayRevenue + 176850; // Historical base + real live payments
+  }, [todayRevenue]);
+
+  const todayOrdersCount = tickets.length;
+  const pendingOrdersCount = tickets.filter(t => t.status !== 'COMPLETED' && t.status !== 'CANCELLED').length;
+  const completedOrdersCount = tickets.filter(t => t.status === 'COMPLETED').length;
+  
+  const todayExpensesTotal = React.useMemo(() => {
+    return expenses.reduce((sum, e) => sum + e.amount, 0);
+  }, [expenses]);
+
+  const monthlyExpensesTotal = todayExpensesTotal + 40150;
   const lowStockItemsCount = inventory.filter(i => i.status === 'Low Stock' || i.status === 'Out of Stock').length;
 
   return (
@@ -742,6 +832,8 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setActiveDetailTicket,
         activeClaimStubTicket,
         setActiveClaimStubTicket,
+        activeSettlementTicket,
+        setActiveSettlementTicket,
         ticketStatusFilter,
         setTicketStatusFilter,
         addToast,

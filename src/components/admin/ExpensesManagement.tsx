@@ -254,10 +254,10 @@ export const ExpensesManagement: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-            Shop Expense Tracker
+            Expense records
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Log and monitor operational costs, utility bills, inventory restocking, and store overheads
+            Log and track daily shop expenses and utility costs
           </p>
         </div>
 
@@ -274,58 +274,8 @@ export const ExpensesManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Top Summary Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-        {/* Today's Expenses */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Today's Expenses</span>
-            <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xs">
-              <TrendingDown size={14} />
-            </div>
-          </div>
-          <div className="text-2xl font-extrabold text-emerald-700 font-mono">
-            ₱{todayExpensesTotal.toLocaleString()}
-          </div>
-          <span className="text-[11px] text-slate-400 block">
-            August 31, 2026 shift disbursements
-          </span>
-        </div>
-
-        {/* Monthly Expenses */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">August 2026 Monthly</span>
-            <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs">
-              <Calendar size={14} />
-            </div>
-          </div>
-          <div className="text-2xl font-extrabold text-slate-900 font-mono">
-            ₱{monthlyExpensesTotal.toLocaleString()}
-          </div>
-          <span className="text-[11px] text-slate-400 block">
-            Includes rent, payroll, supplies & bills
-          </span>
-        </div>
-      </div>
-
-      {/* 3. DATE BUTTONS & SPREADSHEET EXPENSE TABLE */}
+      {/* 2. DATE BUTTONS & SPREADSHEET EXPENSE TABLE */}
       <div className="space-y-3">
-        {/* Section Header */}
-        <div className="flex items-center justify-between gap-2 px-1">
-          <div>
-            <h2 className="text-xs sm:text-sm font-bold text-slate-800 uppercase tracking-wider">
-              Expense Records
-            </h2>
-            <span className="text-[11px] text-slate-400">
-              Click a date button below to view or drop its table
-            </span>
-          </div>
-          <span className="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
-            Total: ₱{totalAllExpenses.toLocaleString()}
-          </span>
-        </div>
-
         {/* Simple Date Buttons */}
         {groupedExpensesByDate.length > 0 ? (
           <div className="space-y-2.5">
@@ -366,21 +316,6 @@ export const ExpensesManagement: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                      {/* Send Button */}
-                      <button
-                        type="button"
-                        id={`send-btn-${group.date}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSendExpense(group.date);
-                        }}
-                        className="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white active:scale-95"
-                        title="Send this table to the Boss UI and drop the table"
-                      >
-                        <Send size={12} />
-                        <span>Send</span>
-                      </button>
-
                       <div className="text-right pl-1">
                         <span className="font-mono font-extrabold text-xs sm:text-sm text-rose-700">
                           ₱{group.subtotalAmount.toLocaleString()}

@@ -31,6 +31,7 @@ import { SettingsView } from './components/settings/SettingsView';
 // Global Modals & Notifications
 import { ClaimStubModal } from './components/common/ClaimStubModal';
 import { TicketDetailModal } from './components/admin/TicketDetailModal';
+import { PaymentSettlementModal } from './components/common/PaymentSettlementModal';
 import { ToastContainer } from './components/common/Toast';
 
 const AppContent: React.FC = () => {
@@ -120,6 +121,7 @@ const AppContent: React.FC = () => {
       {/* Global Modals */}
       <ClaimStubModal />
       <TicketDetailModal />
+      <PaymentSettlementModal />
       <AuthModal />
       <ToastContainer />
     </div>

@@ -37,8 +37,8 @@ export const MobileNav: React.FC = () => {
 
   return (
     <>
-      {/* "More" Drawer for Mobile */}
-      {isMoreMenuOpen && (
+      {/* "More" Drawer for Mobile (Owner only) */}
+      {isMoreMenuOpen && role === 'OWNER' && (
         <div 
           id="mobile-more-drawer-backdrop"
           className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex flex-col justify-end lg:hidden"
@@ -60,19 +60,7 @@ export const MobileNav: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-xs font-semibold">
-              {role === 'ADMIN' ? (
-                <>
-                  <button
-                    onClick={() => { setAdminTab('reports'); setIsMoreMenuOpen(false); }}
-                    className={`flex items-center gap-2 p-3 rounded-xl border text-left col-span-2 ${
-                      adminTab === 'reports' ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-700 border-slate-200'
-                    }`}
-                  >
-                    <FileText size={16} className="text-sky-500" />
-                    <span>Operational Reports</span>
-                  </button>
-                </>
-              ) : (
+              {role === 'OWNER' && (
                 <>
                   <button
                     onClick={() => { setOwnerTab('services'); setIsMoreMenuOpen(false); }}
@@ -183,12 +171,14 @@ export const MobileNav: React.FC = () => {
             </button>
 
             <button
-              id="mobile-nav-admin-more"
-              onClick={() => setIsMoreMenuOpen(true)}
-              className="flex flex-col items-center gap-0.5 py-1 px-1.5 sm:px-3 rounded-xl text-slate-500"
+              id="mobile-nav-admin-reports"
+              onClick={() => setAdminTab('reports')}
+              className={`flex flex-col items-center gap-0.5 py-1 px-1.5 sm:px-3 rounded-xl transition-colors ${
+                adminTab === 'reports' ? 'text-emerald-600 font-bold' : 'text-slate-500'
+              }`}
             >
-              <MoreHorizontal size={18} />
-              <span className="text-[10px]">More</span>
+              <FileText size={18} />
+              <span className="text-[10px]">Reports</span>
             </button>
           </>
         ) : (

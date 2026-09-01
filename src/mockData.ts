@@ -652,6 +652,200 @@ export const INITIAL_TICKETS: Ticket[] = [
     estimatedReadyAt: '2026-08-29 05:00 PM',
     completedAt: '2026-08-30 01:20 PM',
     staffName: 'Arlene Santos'
+  },
+  {
+    id: 'tkt-8',
+    ticketNumber: 'BA8',
+    customerId: 'cust-8',
+    customerName: 'Bea Alonzo-Ramos',
+    customerPhone: '0917 112 3344',
+    items: [
+      {
+        id: 'item-8',
+        serviceId: 'srv-2',
+        name: 'Premium Wash & Press',
+        unitPrice: 95,
+        unitType: 'kg',
+        quantity: 6,
+        subtotal: 570,
+        specialInstructions: 'Delicates and linen'
+      },
+      {
+        id: 'item-8b',
+        serviceId: 'srv-6',
+        name: 'Heavy Comforter / Blanket',
+        unitPrice: 250,
+        unitType: 'piece',
+        quantity: 1,
+        subtotal: 250
+      }
+    ],
+    totalWeightKg: 6,
+    bagCount: 2,
+    totalAmount: 820,
+    amountPaid: 0,
+    paymentStatus: 'UNPAID',
+    paymentMethod: 'CASH',
+    status: 'READY',
+    statusHistory: [
+      {
+        status: 'RECEIVED',
+        timestamp: '2026-08-30 09:15 AM',
+        updatedBy: 'Staff Arlene'
+      },
+      {
+        status: 'WASHING',
+        timestamp: '2026-08-30 10:30 AM',
+        updatedBy: 'Staff Mark'
+      },
+      {
+        status: 'DRYING',
+        timestamp: '2026-08-30 01:00 PM',
+        updatedBy: 'Staff Mark'
+      },
+      {
+        status: 'FOLDING',
+        timestamp: '2026-08-30 03:30 PM',
+        updatedBy: 'Staff Arlene'
+      },
+      {
+        status: 'READY',
+        timestamp: '2026-08-31 08:15 AM',
+        updatedBy: 'Staff Arlene',
+        note: 'Rack C-02. Outstanding balance ₱820 to collect upon pickup.'
+      }
+    ],
+    notes: 'Pay on pickup at the counter (₱820 Cash/GCash).',
+    detergentOption: 'Ariel Professional Powder',
+    fragranceOption: 'Downy Mystique',
+    createdAt: '2026-08-30 09:15 AM',
+    estimatedReadyAt: '2026-08-31 10:00 AM',
+    staffName: 'Arlene Santos'
+  },
+  {
+    id: 'tkt-9',
+    ticketNumber: 'RH9',
+    customerId: 'cust-9',
+    customerName: 'Rico Hernandez',
+    customerPhone: '0908 777 6622',
+    items: [
+      {
+        id: 'item-9',
+        serviceId: 'srv-1',
+        name: 'Wash & Fold',
+        unitPrice: 70,
+        unitType: 'kg',
+        quantity: 5,
+        subtotal: 350
+      },
+      {
+        id: 'item-9b',
+        serviceId: 'srv-4',
+        name: 'Curtains & Heavy Linens',
+        unitPrice: 120,
+        unitType: 'kg',
+        quantity: 2,
+        subtotal: 240
+      }
+    ],
+    totalWeightKg: 7,
+    bagCount: 2,
+    totalAmount: 590,
+    amountPaid: 300,
+    paymentStatus: 'PARTIAL',
+    paymentMethod: 'MAYA',
+    status: 'READY',
+    statusHistory: [
+      {
+        status: 'RECEIVED',
+        timestamp: '2026-08-30 11:30 AM',
+        updatedBy: 'Staff Arlene',
+        note: 'Initial deposit ₱300 paid via Maya.'
+      },
+      {
+        status: 'WASHING',
+        timestamp: '2026-08-30 01:00 PM',
+        updatedBy: 'Staff Mark'
+      },
+      {
+        status: 'DRYING',
+        timestamp: '2026-08-30 03:30 PM',
+        updatedBy: 'Staff Mark'
+      },
+      {
+        status: 'FOLDING',
+        timestamp: '2026-08-30 05:45 PM',
+        updatedBy: 'Staff Arlene'
+      },
+      {
+        status: 'READY',
+        timestamp: '2026-08-31 09:00 AM',
+        updatedBy: 'Staff Arlene',
+        note: 'Stored on Rack A-08. Collect remaining ₱290 balance.'
+      }
+    ],
+    notes: 'Partial ₱300 paid. Remaining balance ₱290 upon pickup.',
+    detergentOption: 'Breeze Power Clean',
+    createdAt: '2026-08-30 11:30 AM',
+    estimatedReadyAt: '2026-08-31 11:00 AM',
+    staffName: 'Mark Dizon'
+  },
+  {
+    id: 'tkt-10',
+    ticketNumber: 'GV10',
+    customerId: 'cust-10',
+    customerName: 'Grace Villanueva',
+    customerPhone: '0919 444 8811',
+    items: [
+      {
+        id: 'item-10',
+        serviceId: 'srv-3',
+        name: 'Dry Cleaning (Barong / Suit)',
+        unitPrice: 180,
+        unitType: 'item',
+        quantity: 2,
+        subtotal: 360
+      }
+    ],
+    totalWeightKg: 1,
+    bagCount: 1,
+    totalAmount: 360,
+    amountPaid: 0,
+    paymentStatus: 'UNPAID',
+    paymentMethod: 'GCASH',
+    status: 'READY',
+    statusHistory: [
+      {
+        status: 'RECEIVED',
+        timestamp: '2026-08-30 08:30 AM',
+        updatedBy: 'Staff Arlene'
+      },
+      {
+        status: 'WASHING',
+        timestamp: '2026-08-30 10:00 AM',
+        updatedBy: 'Specialist Noel'
+      },
+      {
+        status: 'DRYING',
+        timestamp: '2026-08-30 02:00 PM',
+        updatedBy: 'Specialist Noel'
+      },
+      {
+        status: 'FOLDING',
+        timestamp: '2026-08-30 04:30 PM',
+        updatedBy: 'Staff Arlene'
+      },
+      {
+        status: 'READY',
+        timestamp: '2026-08-31 08:30 AM',
+        updatedBy: 'Staff Arlene',
+        note: 'Garment bag hung on Rack VIP-01. Payment ₱360 due.'
+      }
+    ],
+    notes: 'Dry cleaned blazers. Collect ₱360 at pickup.',
+    createdAt: '2026-08-30 08:30 AM',
+    estimatedReadyAt: '2026-08-31 09:30 AM',
+    staffName: 'Arlene Santos'
   }
 ];
 

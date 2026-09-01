@@ -46,7 +46,6 @@ export const Sidebar: React.FC = () => {
     { id: 'tickets' as AdminTab, label: 'Laundry Tickets', icon: TicketIcon, badge: pendingOrdersCount },
     { id: 'create-ticket' as AdminTab, label: 'Create Ticket (POS)', icon: PlusCircle, isHighlight: true },
     { id: 'customers' as AdminTab, label: 'Customers', icon: Users },
-    { id: 'payments' as AdminTab, label: 'Payments / Ledger', icon: CreditCard },
     { id: 'expenses' as AdminTab, label: 'Expense Tracker', icon: Receipt },
     { id: 'reports' as AdminTab, label: 'Operational Reports', icon: FileText },
   ];
