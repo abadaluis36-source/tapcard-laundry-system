@@ -13,9 +13,9 @@ import { TicketManagement } from './TicketManagement';
 
 export const AdminDashboard: React.FC = () => {
   const { 
-    tickets,
-    ticketStatusFilter,
-    setTicketStatusFilter
+    tickets, 
+    ticketStatusFilter, 
+    setTicketStatusFilter 
   } = useLaundry();
 
   const counts = React.useMemo(() => {
@@ -30,7 +30,7 @@ export const AdminDashboard: React.FC = () => {
     };
   }, [tickets]);
 
-  const handleFilterSelect = (status: LaundryStatus | 'ALL') => {
+  const handleToggleFilter = (status: LaundryStatus | 'ALL') => {
     if (ticketStatusFilter === status) {
       setTicketStatusFilter('ALL');
     } else {
@@ -53,18 +53,25 @@ export const AdminDashboard: React.FC = () => {
       {/* Operational Queue Overview */}
       <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-2.5">
         <div className="flex items-center justify-between">
-          <h2 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">
-            Operational Queue
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">
+              Operational Queue
+            </h2>
+            {ticketStatusFilter !== 'ALL' && (
+              <span className="text-[11px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                Filtered: {ticketStatusFilter} (click card again to unfilter)
+              </span>
+            )}
+          </div>
           <button
             type="button"
-            onClick={() => handleFilterSelect('ALL')}
-            className={`text-xs font-mono px-2 py-0.5 rounded-lg transition-colors cursor-pointer ${
+            onClick={() => setTicketStatusFilter('ALL')}
+            className={`text-xs font-mono px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
               ticketStatusFilter === 'ALL'
-                ? 'bg-slate-900 text-white font-bold'
-                : 'text-slate-500 hover:text-emerald-700 hover:underline'
+                ? 'bg-slate-900 text-white'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
             }`}
-            title="Click to view all jobs"
+            title="Show all jobs"
           >
             {counts.total} Total Jobs
           </button>
@@ -74,15 +81,15 @@ export const AdminDashboard: React.FC = () => {
           {/* Pending Intake */}
           <button
             type="button"
-            onClick={() => handleFilterSelect('RECEIVED')}
-            className={`p-2.5 rounded-xl border flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 group shadow-2xs ${
+            onClick={() => handleToggleFilter('RECEIVED')}
+            className={`p-2.5 rounded-xl border flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 shadow-2xs ${
               ticketStatusFilter === 'RECEIVED'
-                ? 'bg-sky-100 border-sky-400 ring-2 ring-sky-400/20'
-                : 'bg-slate-50 hover:bg-slate-100 border-slate-200 hover:border-slate-300'
+                ? 'bg-sky-100/90 border-sky-500 ring-2 ring-sky-500/30'
+                : 'border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300'
             }`}
-            title="Filter Tickets by Pending Intake (Received)"
+            title={ticketStatusFilter === 'RECEIVED' ? 'Click to unselect' : 'Filter by Pending'}
           >
-            <div className="flex items-center justify-between text-slate-500 group-hover:text-slate-800 text-[10px] sm:text-[11px]">
+            <div className="flex items-center justify-between text-slate-600 text-[10px] sm:text-[11px]">
               <span className="font-semibold truncate">Pending</span>
               <Clock size={12} />
             </div>
@@ -94,19 +101,19 @@ export const AdminDashboard: React.FC = () => {
           {/* Washing */}
           <button
             type="button"
-            onClick={() => handleFilterSelect('WASHING')}
-            className={`p-2.5 rounded-xl border text-amber-950 flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 group shadow-2xs ${
+            onClick={() => handleToggleFilter('WASHING')}
+            className={`p-2.5 rounded-xl border flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 shadow-2xs ${
               ticketStatusFilter === 'WASHING'
-                ? 'bg-amber-100 border-amber-400 ring-2 ring-amber-400/20'
-                : 'bg-amber-50/80 hover:bg-amber-100/90 border-amber-200 hover:border-amber-300'
+                ? 'bg-amber-100 border-amber-500 ring-2 ring-amber-500/30 text-amber-950'
+                : 'border-amber-200 bg-amber-50/80 hover:bg-amber-100/80 text-amber-950'
             }`}
-            title="Filter Tickets by Washing"
+            title={ticketStatusFilter === 'WASHING' ? 'Click to unselect' : 'Filter by Washing'}
           >
-            <div className="flex items-center justify-between text-amber-700 group-hover:text-amber-900 text-[10px] sm:text-[11px]">
+            <div className="flex items-center justify-between text-amber-700 text-[10px] sm:text-[11px]">
               <span className="font-semibold truncate">Washing</span>
               <RotateCw size={12} className="animate-spin" />
             </div>
-            <span className="text-lg sm:text-xl font-extrabold font-mono mt-1">
+            <span className="text-lg sm:text-xl font-extrabold font-mono text-amber-900 mt-1">
               {counts.washing}
             </span>
           </button>
@@ -114,19 +121,19 @@ export const AdminDashboard: React.FC = () => {
           {/* Drying */}
           <button
             type="button"
-            onClick={() => handleFilterSelect('DRYING')}
-            className={`p-2.5 rounded-xl border text-sky-950 flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 group shadow-2xs ${
+            onClick={() => handleToggleFilter('DRYING')}
+            className={`p-2.5 rounded-xl border flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 shadow-2xs ${
               ticketStatusFilter === 'DRYING'
-                ? 'bg-sky-100 border-sky-400 ring-2 ring-sky-400/20'
-                : 'bg-sky-50/80 hover:bg-sky-100/90 border-sky-200 hover:border-sky-300'
+                ? 'bg-sky-100 border-sky-500 ring-2 ring-sky-500/30 text-sky-950'
+                : 'border-sky-200 bg-sky-50/80 hover:bg-sky-100/80 text-sky-950'
             }`}
-            title="Filter Tickets by Drying"
+            title={ticketStatusFilter === 'DRYING' ? 'Click to unselect' : 'Filter by Drying'}
           >
-            <div className="flex items-center justify-between text-sky-700 group-hover:text-sky-900 text-[10px] sm:text-[11px]">
+            <div className="flex items-center justify-between text-sky-700 text-[10px] sm:text-[11px]">
               <span className="font-semibold truncate">Drying</span>
               <Wind size={12} />
             </div>
-            <span className="text-lg sm:text-xl font-extrabold font-mono mt-1">
+            <span className="text-lg sm:text-xl font-extrabold font-mono text-sky-900 mt-1">
               {counts.drying}
             </span>
           </button>
@@ -134,19 +141,19 @@ export const AdminDashboard: React.FC = () => {
           {/* Folding */}
           <button
             type="button"
-            onClick={() => handleFilterSelect('FOLDING')}
-            className={`p-2.5 rounded-xl border text-purple-950 flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 group shadow-2xs ${
+            onClick={() => handleToggleFilter('FOLDING')}
+            className={`p-2.5 rounded-xl border flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 shadow-2xs ${
               ticketStatusFilter === 'FOLDING'
-                ? 'bg-purple-100 border-purple-400 ring-2 ring-purple-400/20'
-                : 'bg-purple-50/80 hover:bg-purple-100/90 border-purple-200 hover:border-purple-300'
+                ? 'bg-purple-100 border-purple-500 ring-2 ring-purple-500/30 text-purple-950'
+                : 'border-purple-200 bg-purple-50/80 hover:bg-purple-100/80 text-purple-950'
             }`}
-            title="Filter Tickets by Folding"
+            title={ticketStatusFilter === 'FOLDING' ? 'Click to unselect' : 'Filter by Folding'}
           >
-            <div className="flex items-center justify-between text-purple-700 group-hover:text-purple-900 text-[10px] sm:text-[11px]">
+            <div className="flex items-center justify-between text-purple-700 text-[10px] sm:text-[11px]">
               <span className="font-semibold truncate">Folding</span>
               <Layers size={12} />
             </div>
-            <span className="text-lg sm:text-xl font-extrabold font-mono mt-1">
+            <span className="text-lg sm:text-xl font-extrabold font-mono text-purple-900 mt-1">
               {counts.folding}
             </span>
           </button>
@@ -154,19 +161,19 @@ export const AdminDashboard: React.FC = () => {
           {/* Ready */}
           <button
             type="button"
-            onClick={() => handleFilterSelect('READY')}
-            className={`p-2.5 rounded-xl border text-emerald-950 flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 group shadow-2xs ${
+            onClick={() => handleToggleFilter('READY')}
+            className={`p-2.5 rounded-xl border flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 shadow-2xs ${
               ticketStatusFilter === 'READY'
-                ? 'bg-emerald-100 border-emerald-400 ring-2 ring-emerald-400/20'
-                : 'bg-emerald-50 hover:bg-emerald-100/90 border-emerald-300 hover:border-emerald-400'
+                ? 'bg-emerald-100 border-emerald-500 ring-2 ring-emerald-500/30 text-emerald-950'
+                : 'border-emerald-300 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-950'
             }`}
-            title="Filter Tickets by Ready"
+            title={ticketStatusFilter === 'READY' ? 'Click to unselect' : 'Filter by Ready'}
           >
-            <div className="flex items-center justify-between text-emerald-700 group-hover:text-emerald-900 text-[10px] sm:text-[11px]">
+            <div className="flex items-center justify-between text-emerald-700 text-[10px] sm:text-[11px]">
               <span className="font-semibold truncate">Ready</span>
               <Sparkles size={12} />
             </div>
-            <span className="text-lg sm:text-xl font-extrabold font-mono mt-1">
+            <span className="text-lg sm:text-xl font-extrabold font-mono text-emerald-900 mt-1">
               {counts.ready}
             </span>
           </button>
@@ -174,19 +181,19 @@ export const AdminDashboard: React.FC = () => {
           {/* Completed */}
           <button
             type="button"
-            onClick={() => handleFilterSelect('COMPLETED')}
-            className={`p-2.5 rounded-xl border text-teal-950 flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 group shadow-2xs ${
+            onClick={() => handleToggleFilter('COMPLETED')}
+            className={`p-2.5 rounded-xl border flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 shadow-2xs ${
               ticketStatusFilter === 'COMPLETED'
-                ? 'bg-teal-100 border-teal-400 ring-2 ring-teal-400/20'
-                : 'bg-teal-50 hover:bg-teal-100/90 border-teal-200 hover:border-teal-300'
+                ? 'bg-teal-100 border-teal-500 ring-2 ring-teal-500/30 text-teal-950'
+                : 'border-teal-200 bg-teal-50 hover:bg-teal-100/80 text-teal-950'
             }`}
-            title="Filter Tickets by Completed"
+            title={ticketStatusFilter === 'COMPLETED' ? 'Click to unselect' : 'Filter by Done'}
           >
-            <div className="flex items-center justify-between text-teal-700 group-hover:text-teal-900 text-[10px] sm:text-[11px]">
+            <div className="flex items-center justify-between text-teal-700 text-[10px] sm:text-[11px]">
               <span className="font-semibold truncate">Done</span>
               <CheckCircle2 size={12} />
             </div>
-            <span className="text-lg sm:text-xl font-extrabold font-mono mt-1">
+            <span className="text-lg sm:text-xl font-extrabold font-mono text-teal-900 mt-1">
               {counts.completed}
             </span>
           </button>
@@ -198,3 +205,4 @@ export const AdminDashboard: React.FC = () => {
     </div>
   );
 };
+

@@ -41,9 +41,8 @@ export const Sidebar: React.FC = () => {
   const pendingAuditsCount = Object.values(expenseSubmissions || {}).filter((s: ExpenseSubmission) => s.status === 'PENDING_REVIEW').length;
 
   // Admin / Staff navigation items (Focused on Counter POS & Shift Operations)
-  const adminNavItems = [
+  const adminNavItems: Array<{ id: AdminTab; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; badge?: number; isHighlight?: boolean }> = [
     { id: 'dashboard' as AdminTab, label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'tickets' as AdminTab, label: 'Laundry Tickets', icon: TicketIcon, badge: pendingOrdersCount },
     { id: 'create-ticket' as AdminTab, label: 'Create Ticket (POS)', icon: PlusCircle, isHighlight: true },
     { id: 'customers' as AdminTab, label: 'Customers', icon: Users },
     { id: 'expenses' as AdminTab, label: 'Expense Tracker', icon: Receipt },
