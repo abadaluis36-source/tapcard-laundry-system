@@ -454,19 +454,10 @@ export const PaymentsLedger: React.FC = () => {
                         {/* Subtotal Footer */}
                         <tfoot>
                           <tr className="bg-slate-50 border-t-2 border-slate-300 font-bold text-slate-900">
-                            <td className="py-2 px-1.5 sm:px-3 text-center border-r border-slate-300 uppercase tracking-wider text-[8px] sm:text-[10px] text-slate-600">
+                            <td colSpan={4} className="py-2.5 px-3 text-right border-r border-slate-300 font-extrabold uppercase tracking-wider text-[10px] sm:text-xs text-slate-700">
                               Subtotal
                             </td>
-                            <td className="py-2 px-2 sm:px-3 text-center border-r border-slate-300 text-slate-600 font-medium text-[9px] sm:text-[11px] truncate">
-                              {group.itemCount} {group.itemCount === 1 ? 'entry' : 'entries'}
-                            </td>
-                            <td className="py-2 px-2 sm:px-3 border-r border-slate-300 text-slate-600 font-medium text-[9px] sm:text-[11px] truncate">
-                              {group.itemCount} Completed
-                            </td>
-                            <td className="py-2 px-1 text-center font-mono font-extrabold text-slate-700 border-r border-slate-300 text-[9px] sm:text-xs whitespace-nowrap">
-                              100%
-                            </td>
-                            <td className="py-2 px-2 sm:px-3 text-right font-mono font-extrabold text-emerald-700 whitespace-nowrap text-[9px] sm:text-xs">
+                            <td className="py-2.5 px-2 sm:px-3 text-right font-mono font-extrabold text-emerald-700 whitespace-nowrap text-[10px] sm:text-xs">
                               ₱{group.subtotalAmount.toLocaleString()}
                             </td>
                           </tr>

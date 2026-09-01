@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useLaundry } from '../../context/LaundryContext';
 import { 
-  Send, 
   Download, 
   Receipt, 
   DollarSign, 
@@ -12,18 +11,14 @@ import {
 import { PaymentTransaction, Expense } from '../../types';
 
 export const ReportsView: React.FC = () => {
-  const { currentUser, payments, expenses, addToast } = useLaundry();
+  const { payments, expenses, addToast } = useLaundry();
 
   // Admin choice between Total Revenue file or Expense file
   const [activeReportChoice, setActiveReportChoice] = useState<'REVENUE' | 'EXPENSES'>('REVENUE');
 
-  // Expanded dates state for the interactive table dropdowns
-  const [expandedRevenueDates, setExpandedRevenueDates] = useState<Record<string, boolean>>({
-    '2026-08-31': true
-  });
-  const [expandedExpenseDates, setExpandedExpenseDates] = useState<Record<string, boolean>>({
-    '2026-08-31': true
-  });
+  // Expanded dates state for the interactive table dropdowns (collapsed by default)
+  const [expandedRevenueDates, setExpandedRevenueDates] = useState<Record<string, boolean>>({});
+  const [expandedExpenseDates, setExpandedExpenseDates] = useState<Record<string, boolean>>({});
 
   const toggleRevenueDate = (date: string) => {
     setExpandedRevenueDates(prev => ({ ...prev, [date]: !prev[date] }));
@@ -145,16 +140,6 @@ export const ReportsView: React.FC = () => {
     addToast('Downloaded', `Saved ${filename}`, 'success');
   };
 
-  // Send to Boss Handler
-  const handleSendDateToBoss = (type: 'TOTAL_REVENUE' | 'EXPENSES', date: string, amount: number) => {
-    const typeLabel = type === 'TOTAL_REVENUE' ? 'Total Revenue File' : 'Expense File';
-    addToast(
-      'Sent to Boss Dennis',
-      `Transmitted ${typeLabel} for ${date} (₱${amount.toLocaleString()}) to Boss Dennis.`,
-      'success'
-    );
-  };
-
   return (
     <div id="reports-choice-view" className="space-y-4 max-w-5xl mx-auto">
       
@@ -164,7 +149,7 @@ export const ReportsView: React.FC = () => {
           Operational Reports
         </h1>
         <p className="text-xs text-slate-500 mt-0.5">
-          Select either the Total Revenue file or Expense file to review and send to Boss Dennis
+          Select either the Total Revenue file or Expense file to review and download
         </p>
       </div>
 
@@ -303,15 +288,6 @@ export const ReportsView: React.FC = () => {
                           <Download size={13} />
                           <span>Download CSV</span>
                         </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleSendDateToBoss('TOTAL_REVENUE', group.date, group.totalAmount)}
-                          className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
-                        >
-                          <Send size={13} />
-                          <span>Send Total Revenue File to Boss</span>
-                        </button>
                       </div>
                     </div>
                   </div>
@@ -413,15 +389,6 @@ export const ReportsView: React.FC = () => {
                         >
                           <Download size={13} />
                           <span>Download CSV</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleSendDateToBoss('EXPENSES', group.date, group.totalAmount)}
-                          className="px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
-                        >
-                          <Send size={13} />
-                          <span>Send Expenses File to Boss</span>
                         </button>
                       </div>
                     </div>

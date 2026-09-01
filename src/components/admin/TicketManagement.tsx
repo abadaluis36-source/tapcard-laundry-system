@@ -77,23 +77,28 @@ export const TicketManagement: React.FC<TicketManagementProps> = ({ hideHeader =
   };
 
   const handleStatusFilterClick = (status: LaundryStatus | 'ALL') => {
-    if (ticketStatusFilter === status && status !== 'ALL') {
-      setTicketStatusFilter('ALL');
-    } else {
-      setTicketStatusFilter(status);
-    }
+    setTicketStatusFilter(status);
   };
 
   const statuses: { key: LaundryStatus | 'ALL'; label: string }[] = [
     { key: 'ALL', label: 'All Tickets' },
-    { key: 'RECEIVED', label: 'Received' },
-    { key: 'WASHING', label: 'Washing' },
-    { key: 'DRYING', label: 'Drying' },
+    { key: 'WASHING', label: 'Washing & Drying' },
     { key: 'FOLDING', label: 'Folding' },
     { key: 'READY', label: 'Ready' },
     { key: 'COMPLETED', label: 'Completed' },
     { key: 'CANCELLED', label: 'Cancelled' },
   ];
+
+  const getDropdownColorClass = (status: LaundryStatus) => {
+    switch (status) {
+      case 'WASHING': return 'bg-white text-amber-700 border-amber-300 focus:ring-amber-500 hover:bg-amber-50/50';
+      case 'FOLDING': return 'bg-white text-purple-700 border-purple-300 focus:ring-purple-500 hover:bg-purple-50/50';
+      case 'READY': return 'bg-white text-emerald-700 border-emerald-300 focus:ring-emerald-500 hover:bg-emerald-50/50';
+      case 'COMPLETED': return 'bg-white text-teal-700 border-teal-300 focus:ring-teal-500 hover:bg-teal-50/50';
+      case 'CANCELLED': return 'bg-white text-red-700 border-red-300 focus:ring-red-500 hover:bg-red-50/50';
+      default: return 'bg-white text-slate-700 border-slate-200';
+    }
+  };
 
   return (
     <div id="ticket-management-view" className="space-y-5">
@@ -134,7 +139,6 @@ export const TicketManagement: React.FC<TicketManagementProps> = ({ hideHeader =
               { key: 'ALL', label: 'All', count: stageScopedTickets.length },
               { key: 'PAID', label: 'Paid', dot: 'bg-emerald-500', count: stageScopedTickets.filter(t => t.paymentStatus === 'PAID').length },
               { key: 'UNPAID', label: 'Unpaid', dot: 'bg-rose-500', count: stageScopedTickets.filter(t => t.paymentStatus === 'UNPAID').length },
-              { key: 'PARTIAL', label: 'Partial', dot: 'bg-amber-500', count: stageScopedTickets.filter(t => t.paymentStatus === 'PARTIAL').length },
             ].map((p) => {
               const isSelected = paymentFilter === p.key;
               return (
@@ -263,19 +267,21 @@ export const TicketManagement: React.FC<TicketManagementProps> = ({ hideHeader =
                     {/* Status with inline dropdown */}
                     <td className="py-2.5 px-3.5">
                       <div className="flex items-center gap-1.5">
-                        <StatusBadge status={tkt.status} size="sm" />
                         <select
                           value={tkt.status}
                           onChange={(e) => handleStatusChange(tkt, e.target.value as LaundryStatus)}
-                          className="text-[10px] py-1 px-1.5 rounded-lg border border-slate-200 bg-white font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                          className="text-[11px] py-1 pl-2 pr-6 rounded-lg border border-slate-300 bg-white font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 hover:border-slate-400 cursor-pointer appearance-none shadow-2xs transition-colors"
+                          style={{
+                            backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23475569' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.75' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                            backgroundPosition: `right 0.25rem center`,
+                            backgroundRepeat: `no-repeat`,
+                            backgroundSize: `1.25em 1.25em`
+                          }}
                         >
-                          <option value="RECEIVED">⚪ RECEIVED</option>
-                          <option value="WASHING">🟡 WASHING</option>
-                          <option value="DRYING">🔵 DRYING</option>
+                          <option value="WASHING">🟡 WASHING &amp; DRYING</option>
                           <option value="FOLDING">🟣 FOLDING</option>
                           <option value="READY">🟢 READY</option>
                           <option value="COMPLETED">✅ COMPLETED</option>
-                          <option value="CANCELLED">🔴 CANCELLED</option>
                         </select>
                       </div>
                     </td>
@@ -290,10 +296,10 @@ export const TicketManagement: React.FC<TicketManagementProps> = ({ hideHeader =
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => setActiveClaimStubTicket(tkt)}
-                          className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                          className="p-1.5 text-slate-600 hover:text-slate-950 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
                           title="View Customer Claim Stub"
                         >
-                          <Eye size={14} />
+                          <Eye size={15} strokeWidth={2.5} />
                         </button>
                       </div>
                     </td>
@@ -372,15 +378,18 @@ export const TicketManagement: React.FC<TicketManagementProps> = ({ hideHeader =
               {/* Row 3: Status controller & Details trigger */}
               <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between gap-1.5">
                 <div className="flex items-center gap-1 flex-1 min-w-0">
-                  <StatusBadge status={tkt.status} size="sm" />
                   <select
                     value={tkt.status}
                     onChange={(e) => handleStatusChange(tkt, e.target.value as LaundryStatus)}
-                    className="text-[11px] py-1 px-1.5 rounded-lg border border-slate-200 bg-slate-50 font-bold text-slate-700 flex-1 focus:outline-none cursor-pointer truncate"
+                    className="text-[11px] py-1 pl-2 pr-6 rounded-lg border border-slate-300 bg-white font-bold text-slate-800 flex-1 focus:outline-none focus:ring-2 focus:ring-slate-400 hover:border-slate-400 cursor-pointer truncate appearance-none shadow-2xs transition-colors"
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23475569' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.75' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                      backgroundPosition: `right 0.25rem center`,
+                      backgroundRepeat: `no-repeat`,
+                      backgroundSize: `1.25em 1.25em`
+                    }}
                   >
-                    <option value="RECEIVED">⚪ Received</option>
-                    <option value="WASHING">🟡 Washing</option>
-                    <option value="DRYING">🔵 Drying</option>
+                    <option value="WASHING">🟡 Washing &amp; Drying</option>
                     <option value="FOLDING">🟣 Folding</option>
                     <option value="READY">🟢 Ready</option>
                     <option value="COMPLETED">✅ Completed</option>
@@ -389,11 +398,11 @@ export const TicketManagement: React.FC<TicketManagementProps> = ({ hideHeader =
 
                 <button
                   onClick={() => setActiveClaimStubTicket(tkt)}
-                  className="p-1.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-600 hover:text-slate-900 rounded-lg transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+                  className="p-1.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 hover:text-slate-950 rounded-lg transition-colors cursor-pointer shrink-0 flex items-center justify-center"
                   title="View Claim Stub"
                   aria-label="View Claim Stub"
                 >
-                  <Eye size={15} />
+                  <Eye size={15} strokeWidth={2.5} />
                 </button>
               </div>
             </div>

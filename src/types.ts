@@ -1,7 +1,5 @@
 export type LaundryStatus = 
-  | 'RECEIVED'
   | 'WASHING'
-  | 'DRYING'
   | 'FOLDING'
   | 'READY'
   | 'COMPLETED'
@@ -142,15 +140,18 @@ export type UserRole = 'ADMIN' | 'OWNER' | 'CUSTOMER';
 export interface AuthUser {
   id: string;
   name: string;
+  username?: string;
   email: string;
   role: 'ADMIN' | 'OWNER';
   staffCode: string;
   title: string;
   pin: string;
+  password?: string;
   passwordHash?: string;
   branch: string;
   avatarUrl?: string;
   shift?: string;
+  status?: 'ACTIVE' | 'INACTIVE';
 }
 
 export type AdminTab = 

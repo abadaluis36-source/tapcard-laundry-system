@@ -37,6 +37,9 @@ interface LaundryContextType {
   // Authentication
   currentUser: AuthUser | null;
   authUsers: AuthUser[];
+  addStaff: (staffData: Omit<AuthUser, 'id'>) => void;
+  updateStaff: (id: string, updatedData: Partial<AuthUser>) => void;
+  deleteStaff: (id: string) => void;
   login: (identifier: string, secret: string, targetRole: 'ADMIN' | 'OWNER') => { success: boolean; message?: string };
   logout: () => void;
   switchUser: (userId: string) => void;
@@ -111,6 +114,22 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [adminTab, setAdminTab] = useState<AdminTab>('dashboard');
   const [ownerTab, setOwnerTab] = useState<OwnerTab>('dashboard');
   
+  // Dynamic Auth Users state with persistence
+  const [authUsers, setAuthUsers] = useState<AuthUser[]>(() => {
+    try {
+      const saved = localStorage.getItem('tapcard_auth_users');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch {
+      // fallback
+    }
+    return AUTH_USERS;
+  });
+
   // Auth state - initialized to Arlene Santos by default for smooth demonstration, but allows logout
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
     try {
@@ -163,6 +182,15 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, [expenseSubmissions]);
   
+  // Save auth users in localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('tapcard_auth_users', JSON.stringify(authUsers));
+    } catch {
+      // ignore
+    }
+  }, [authUsers]);
+
   // Save user in localStorage
   useEffect(() => {
     try {
@@ -231,10 +259,10 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       ...newTicketData,
       id: newId,
       createdAt: timeString,
-      status: 'RECEIVED',
+      status: 'WASHING',
       statusHistory: [
         {
-          status: 'RECEIVED',
+          status: 'WASHING',
           timestamp: timeString,
           updatedBy: 'Staff On Duty',
           note: 'Ticket created at counter. Bagged and tagged.'
@@ -687,6 +715,68 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setServices((prev) => prev.map((s) => s.id === id ? { ...s, isActive: !s.isActive } : s));
   };
 
+  // Staff Account Management Methods
+  const addStaff = (staffData: Omit<AuthUser, 'id'>) => {
+    const newId = `user-staff-${Date.now()}`;
+    const password = staffData.password || staffData.pin || '1234';
+    const newStaff: AuthUser = {
+      ...staffData,
+      id: newId,
+      username: staffData.username?.trim().toLowerCase() || `staff_${staffData.staffCode.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
+      password: password,
+      pin: password,
+      status: staffData.status || 'ACTIVE',
+      branch: staffData.branch || 'Makati Central Branch',
+      shift: staffData.shift || 'Morning Shift (7:00 AM - 3:00 PM)'
+    };
+
+    setAuthUsers((prev) => [...prev, newStaff]);
+    addToast('Staff Account Created', `Account for ${newStaff.name} (${newStaff.username}) is now ready to access the Admin UI.`, 'success');
+  };
+
+  const updateStaff = (id: string, updatedData: Partial<AuthUser>) => {
+    setAuthUsers((prev) =>
+      prev.map((user) => {
+        if (user.id === id) {
+          const updated = {
+            ...user,
+            ...updatedData,
+            // Sync pin and password if one was updated
+            pin: updatedData.password || updatedData.pin || user.pin,
+            password: updatedData.password || updatedData.pin || user.password || user.pin
+          };
+          // If current logged-in user is updated, update active session as well
+          if (currentUser?.id === id) {
+            setCurrentUser(updated);
+          }
+          return updated;
+        }
+        return user;
+      })
+    );
+    addToast('Staff Account Updated', 'Staff credentials and profile changes saved successfully.', 'success');
+  };
+
+  const deleteStaff = (id: string) => {
+    const targetUser = authUsers.find(u => u.id === id);
+    if (!targetUser) return;
+
+    // Prevent deleting the only owner
+    if (targetUser.role === 'OWNER') {
+      const ownerCount = authUsers.filter(u => u.role === 'OWNER').length;
+      if (ownerCount <= 1) {
+        addToast('Cannot Remove Owner', 'At least one Owner account must remain in the system.', 'warning');
+        return;
+      }
+    }
+
+    setAuthUsers((prev) => prev.filter((u) => u.id !== id));
+    if (currentUser?.id === id) {
+      logout();
+    }
+    addToast('Staff Account Removed', `Removed ${targetUser.name} from staff list.`, 'info');
+  };
+
   // Auth methods
   const login = (identifier: string, secret: string, targetRole: 'ADMIN' | 'OWNER'): { success: boolean; message?: string } => {
     const trimmedId = identifier.trim().toLowerCase();
@@ -699,44 +789,49 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return { success: false, message: 'Please enter your password.' };
     }
 
-    // Match by email, staffCode, name, or simple keywords like 'admin', 'staff', 'owner'
-    let foundUser = AUTH_USERS.find(u => {
+    // Match by username, email, staffCode, name, or keywords ('admin', 'staff', 'owner', 'boss')
+    let foundUser = authUsers.find(u => {
+      const uUsername = (u.username || '').toLowerCase();
       const email = u.email.toLowerCase();
       const code = u.staffCode.toLowerCase();
       const name = u.name.toLowerCase();
       
+      if (uUsername && uUsername === trimmedId) return true;
+      if (email === trimmedId) return true;
+      if (code === trimmedId) return true;
+      if (name === trimmedId || name.includes(trimmedId)) return true;
+
       if (trimmedId === 'admin' && u.role === 'ADMIN') return true;
       if (trimmedId === 'staff' && u.role === 'ADMIN') return true;
       if (trimmedId === 'owner' && u.role === 'OWNER') return true;
       if (trimmedId === 'boss' && u.role === 'OWNER') return true;
       
-      return email === trimmedId || 
-             code === trimmedId || 
-             name.includes(trimmedId) || 
-             trimmedId.includes(name.split(' ')[0].toLowerCase());
+      return false;
     });
 
     // If still not found, check if matching targetRole
     if (!foundUser) {
       if (trimmedId === 'admin' || trimmedId === 'staff' || targetRole === 'ADMIN') {
-        foundUser = AUTH_USERS[0];
+        foundUser = authUsers.find(u => u.role === 'ADMIN') || authUsers[0];
       } else if (trimmedId === 'owner' || targetRole === 'OWNER') {
-        foundUser = AUTH_USERS.find(u => u.role === 'OWNER') || AUTH_USERS[0];
+        foundUser = authUsers.find(u => u.role === 'OWNER') || authUsers[0];
       }
     }
 
     if (!foundUser) {
       return { 
         success: false, 
-        message: `Account "${identifier}" not found. Try 'admin' or 'owner'.` 
+        message: `Account "${identifier}" not found. Please check your username.` 
       };
     }
 
     // Determine actual role
     const effectiveRole = foundUser.role;
 
-    // Check credentials (accepts pin, '1234', '8888', 'admin', 'owner', 'password')
+    // Check credentials against staff password, pin, or default fallback shortcuts
+    const expectedPassword = foundUser.password || foundUser.pin;
     const isValidSecret = 
+      trimmedSecret === expectedPassword ||
       trimmedSecret === foundUser.pin ||
       trimmedSecret === '1234' ||
       trimmedSecret === '8888' ||
@@ -755,7 +850,7 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     return { 
       success: false, 
-      message: 'Incorrect password. (Try 1234 for Admin, 8888 for Owner)' 
+      message: 'Incorrect password. Please verify and try again.' 
     };
   };
 
@@ -767,7 +862,7 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const switchUser = (userId: string) => {
-    const user = AUTH_USERS.find(u => u.id === userId);
+    const user = authUsers.find(u => u.id === userId);
     if (user) {
       setCurrentUser(user);
       setRole(user.role);
@@ -806,7 +901,10 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         ownerTab,
         setOwnerTab,
         currentUser,
-        authUsers: AUTH_USERS,
+        authUsers,
+        addStaff,
+        updateStaff,
+        deleteStaff,
         login,
         logout,
         switchUser,

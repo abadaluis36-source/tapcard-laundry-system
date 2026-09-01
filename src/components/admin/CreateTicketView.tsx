@@ -208,7 +208,7 @@ export const CreateTicketView: React.FC<CreateTicketProps> = ({ isModal = false,
       amountPaid: currentAmountPaid,
       paymentStatus,
       paymentMethod,
-      status: 'RECEIVED',
+      status: 'WASHING',
       notes: [
         generalNotes,
         extraDetergentScoops > 0 ? `+${extraDetergentScoops} Extra Detergent Scoop` : '',
@@ -224,7 +224,7 @@ export const CreateTicketView: React.FC<CreateTicketProps> = ({ isModal = false,
     setActiveClaimStubTicket(newTicket);
 
     if (onClose) onClose();
-    setAdminTab('tickets');
+    setAdminTab('dashboard');
   };
 
   const filteredCustomers = customers.filter(c => 
@@ -625,8 +625,8 @@ export const CreateTicketView: React.FC<CreateTicketProps> = ({ isModal = false,
               Payment Status
             </label>
             
-            <div className="grid grid-cols-3 gap-2">
-              {(['PAID', 'UNPAID', 'PARTIAL'] as PaymentStatus[]).map((st) => (
+            <div className="grid grid-cols-2 gap-2">
+              {(['PAID', 'UNPAID'] as PaymentStatus[]).map((st) => (
                 <button
                   key={st}
                   type="button"
@@ -635,9 +635,7 @@ export const CreateTicketView: React.FC<CreateTicketProps> = ({ isModal = false,
                     paymentStatus === st
                       ? st === 'PAID'
                         ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                        : st === 'UNPAID'
-                          ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
-                          : 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                        : 'bg-rose-600 text-white border-rose-600 shadow-xs'
                       : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
@@ -646,24 +644,26 @@ export const CreateTicketView: React.FC<CreateTicketProps> = ({ isModal = false,
               ))}
             </div>
 
-            {/* Payment Method Selector */}
-            <div className="mt-3 flex items-center gap-2">
-              <span className="text-[11px] font-semibold text-slate-500">Method:</span>
-              {(['CASH', 'GCASH', 'MAYA'] as PaymentMethod[]).map((pm) => (
-                <button
-                  key={pm}
-                  type="button"
-                  onClick={() => setPaymentMethod(pm)}
-                  className={`px-2.5 py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
-                    paymentMethod === pm
-                      ? 'bg-slate-900 text-white border-slate-900'
-                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                  }`}
-                >
-                  {pm}
-                </button>
-              ))}
-            </div>
+            {/* Payment Method Selector - Only displayed when PAID */}
+            {paymentStatus === 'PAID' && (
+              <div className="mt-3 flex items-center gap-2">
+                <span className="text-[11px] font-semibold text-slate-500">Method:</span>
+                {(['CASH', 'GCASH', 'MAYA'] as PaymentMethod[]).map((pm) => (
+                  <button
+                    key={pm}
+                    type="button"
+                    onClick={() => setPaymentMethod(pm)}
+                    className={`px-2.5 py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                      paymentMethod === pm
+                        ? 'bg-slate-900 text-white border-slate-900'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    {pm}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div>
@@ -695,7 +695,7 @@ export const CreateTicketView: React.FC<CreateTicketProps> = ({ isModal = false,
             </div>
             <span className="text-[11px] text-slate-300">
               {cartItems.length > 0 
-                ? `Payment: ${paymentStatus} (${paymentMethod}) · ${totalWeightKg}kg total`
+                ? `Payment: ${paymentStatus}${paymentStatus === 'PAID' ? ` (${paymentMethod})` : ''} · ${totalWeightKg}kg total`
                 : 'No service selected yet'
               }
             </span>

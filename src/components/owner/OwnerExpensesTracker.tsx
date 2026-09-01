@@ -53,10 +53,7 @@ export const OwnerExpensesTracker: React.FC = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
-  const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({
-    '2026-09-01': true,
-    '2026-08-31': true
-  });
+  const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
 
   // Modal for Boss to add direct executive overhead
   const [isAddExpenseModalOpen, setIsAddExpenseModalOpen] = useState(false);

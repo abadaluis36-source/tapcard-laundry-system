@@ -26,29 +26,13 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
 }) => {
   const getStatusConfig = (st: LaundryStatus) => {
     switch (st) {
-      case 'RECEIVED':
-        return {
-          label: 'Received',
-          bg: 'bg-slate-100 text-slate-800 border-slate-300',
-          dotBg: 'bg-slate-500',
-          icon: Clock,
-          emoji: '⚪'
-        };
       case 'WASHING':
         return {
-          label: 'Washing',
+          label: 'Washing & Drying',
           bg: 'bg-amber-50 text-amber-900 border-amber-300',
           dotBg: 'bg-amber-500 animate-pulse',
           icon: RotateCw,
           emoji: '🟡'
-        };
-      case 'DRYING':
-        return {
-          label: 'Drying',
-          bg: 'bg-sky-50 text-sky-900 border-sky-300',
-          dotBg: 'bg-sky-500 animate-pulse',
-          icon: Wind,
-          emoji: '🔵'
         };
       case 'FOLDING':
         return {

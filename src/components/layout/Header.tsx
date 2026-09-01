@@ -184,11 +184,19 @@ export const Header: React.FC = () => {
                     className="flex items-center gap-1.5 sm:gap-2 p-1 sm:pl-1.5 sm:pr-2.5 bg-slate-100 hover:bg-slate-200/80 rounded-xl border border-slate-200/90 text-left transition-all cursor-pointer select-none active:scale-95 shadow-2xs"
                     title="Account profile, switch role or log out"
                   >
-                    <div className={`w-7 h-7 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center font-black text-xs text-white shadow-xs ${
-                      currentUser.role === 'OWNER' ? 'bg-indigo-600' : 'bg-emerald-600'
-                    }`}>
-                      {currentUser.name.charAt(0)}
-                    </div>
+                    {currentUser.avatarUrl ? (
+                      <img 
+                        src={currentUser.avatarUrl} 
+                        alt={currentUser.name} 
+                        className="w-7 h-7 sm:w-7 sm:h-7 rounded-lg object-cover shadow-xs ring-1 ring-slate-200" 
+                      />
+                    ) : (
+                      <div className={`w-7 h-7 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center font-black text-xs text-white shadow-xs ${
+                        currentUser.role === 'OWNER' ? 'bg-indigo-600' : 'bg-emerald-600'
+                      }`}>
+                        {currentUser.name.charAt(0)}
+                      </div>
+                    )}
                     <div className="hidden sm:block text-left leading-none">
                       <span className="block text-xs font-bold text-slate-800 leading-tight truncate max-w-[90px]">
                         {currentUser.name.split(' ')[0]}
@@ -209,11 +217,19 @@ export const Header: React.FC = () => {
                       {/* User Identity info */}
                       <div className="px-3.5 py-2.5 border-b border-slate-100 bg-slate-50/70">
                         <div className="flex items-center gap-2.5">
-                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-sm text-white shadow-xs ${
-                            currentUser.role === 'OWNER' ? 'bg-indigo-600' : 'bg-emerald-600'
-                          }`}>
-                            {currentUser.name.charAt(0)}
-                          </div>
+                          {currentUser.avatarUrl ? (
+                            <img 
+                              src={currentUser.avatarUrl} 
+                              alt={currentUser.name} 
+                              className="w-9 h-9 rounded-xl object-cover shadow-xs ring-1 ring-slate-200" 
+                            />
+                          ) : (
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-sm text-white shadow-xs ${
+                              currentUser.role === 'OWNER' ? 'bg-indigo-600' : 'bg-emerald-600'
+                            }`}>
+                              {currentUser.name.charAt(0)}
+                            </div>
+                          )}
                           <div className="min-w-0 flex-1">
                             <p className="text-xs font-bold text-slate-900 truncate">{currentUser.name}</p>
                             <p className="text-[10px] text-slate-500 truncate">{currentUser.title} • <span className="font-mono">{currentUser.staffCode}</span></p>

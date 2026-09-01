@@ -50,9 +50,7 @@ export const TicketDetailModal: React.FC = () => {
   const ticket = activeDetailTicket;
 
   const STAGES: { status: LaundryStatus; label: string; icon: any; color: string; desc: string }[] = [
-    { status: 'RECEIVED', label: 'RECEIVED', icon: Clock, color: 'slate', desc: 'Dropped off & tagged' },
-    { status: 'WASHING', label: 'WASHING', icon: RotateCw, color: 'amber', desc: 'In washing machine' },
-    { status: 'DRYING', label: 'DRYING', icon: Wind, color: 'sky', desc: 'Tumble drying' },
+    { status: 'WASHING', label: 'WASHING & DRYING', icon: RotateCw, color: 'amber', desc: 'In washing & drying machine' },
     { status: 'FOLDING', label: 'FOLDING', icon: Layers, color: 'purple', desc: 'Steam press & folding' },
     { status: 'READY', label: 'READY FOR PICKUP', icon: Sparkles, color: 'emerald', desc: 'Bagged on rack' },
     { status: 'COMPLETED', label: 'COMPLETED', icon: CheckCircle2, color: 'teal', desc: 'Picked up & paid' },
@@ -60,12 +58,10 @@ export const TicketDetailModal: React.FC = () => {
 
   const getStageIndex = (st: LaundryStatus) => {
     switch (st) {
-      case 'RECEIVED': return 0;
-      case 'WASHING': return 1;
-      case 'DRYING': return 2;
-      case 'FOLDING': return 3;
-      case 'READY': return 4;
-      case 'COMPLETED': return 5;
+      case 'WASHING': return 0;
+      case 'FOLDING': return 1;
+      case 'READY': return 2;
+      case 'COMPLETED': return 3;
       default: return 0;
     }
   };
@@ -316,7 +312,7 @@ export const TicketDetailModal: React.FC = () => {
 
             {showPaymentEditor ? (
               <div className="p-3 bg-white rounded-lg border border-slate-300 space-y-3">
-                <div className="grid grid-cols-2 gap-2">
+                <div className={editPaymentStatus === 'PAID' ? 'grid grid-cols-2 gap-2' : 'space-y-2'}>
                   <div>
                     <label className="text-[11px] font-bold text-slate-700 block mb-1">Payment Status</label>
                     <select
@@ -325,22 +321,23 @@ export const TicketDetailModal: React.FC = () => {
                       className="w-full px-2 py-1.5 text-xs rounded border border-slate-300"
                     >
                       <option value="PAID">PAID</option>
-                      <option value="PARTIAL">PARTIAL</option>
                       <option value="UNPAID">UNPAID</option>
                     </select>
                   </div>
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Method</label>
-                    <select
-                      value={editPaymentMethod}
-                      onChange={(e) => setEditPaymentMethod(e.target.value as PaymentMethod)}
-                      className="w-full px-2 py-1.5 text-xs rounded border border-slate-300"
-                    >
-                      <option value="CASH">CASH</option>
-                      <option value="GCASH">GCASH</option>
-                      <option value="MAYA">MAYA</option>
-                    </select>
-                  </div>
+                  {editPaymentStatus === 'PAID' && (
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">Method</label>
+                      <select
+                        value={editPaymentMethod}
+                        onChange={(e) => setEditPaymentMethod(e.target.value as PaymentMethod)}
+                        className="w-full px-2 py-1.5 text-xs rounded border border-slate-300"
+                      >
+                        <option value="CASH">CASH</option>
+                        <option value="GCASH">GCASH</option>
+                        <option value="MAYA">MAYA</option>
+                      </select>
+                    </div>
+                  )}
                 </div>
 
                 <button

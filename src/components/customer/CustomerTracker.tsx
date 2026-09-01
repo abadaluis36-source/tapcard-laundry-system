@@ -107,9 +107,7 @@ export const CustomerTracker: React.FC = () => {
 
   // 6-step progress pipeline definition
   const STAGES: { status: LaundryStatus; label: string; desc: string }[] = [
-    { status: 'RECEIVED', label: 'Received', desc: 'Dropped off & sorted' },
-    { status: 'WASHING', label: 'Washing', desc: 'Sanitary deep wash cycle' },
-    { status: 'DRYING', label: 'Drying', desc: 'Tumble drying & conditioning' },
+    { status: 'WASHING', label: 'Washing & Drying', desc: 'Sanitary deep wash, dry & conditioning' },
     { status: 'FOLDING', label: 'Folding & Press', desc: 'Neat fold & steam press' },
     { status: 'READY', label: 'Ready for Pickup', desc: 'Bagged & stored on rack' },
     { status: 'COMPLETED', label: 'Completed', desc: 'Picked up by customer' },
@@ -117,12 +115,10 @@ export const CustomerTracker: React.FC = () => {
 
   const getStageIndex = (status: LaundryStatus) => {
     switch (status) {
-      case 'RECEIVED': return 0;
-      case 'WASHING': return 1;
-      case 'DRYING': return 2;
-      case 'FOLDING': return 3;
-      case 'READY': return 4;
-      case 'COMPLETED': return 5;
+      case 'WASHING': return 0;
+      case 'FOLDING': return 1;
+      case 'READY': return 2;
+      case 'COMPLETED': return 3;
       default: return 0;
     }
   };
@@ -419,16 +415,6 @@ export const CustomerTracker: React.FC = () => {
                   <PaymentBadge status={selectedCustomerTicket.paymentStatus} size="sm" />
                 </div>
               </div>
-
-              {/* Claim Stub View Action */}
-              <button
-                id="customer-view-claim-stub-btn"
-                onClick={() => setActiveClaimStubTicket(selectedCustomerTicket)}
-                className="w-full mt-3 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 font-bold text-xs transition-colors shadow-2xs"
-              >
-                <Receipt size={15} />
-                <span>View Digital Claim Stub</span>
-              </button>
             </div>
 
             {/* Store Information Footer */}

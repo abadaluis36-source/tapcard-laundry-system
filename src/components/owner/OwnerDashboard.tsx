@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useLaundry } from '../../context/LaundryContext';
-import { OWNER_ANALYTICS } from '../../mockData';
 import { 
   TrendingUp, 
   DollarSign, 
@@ -15,12 +14,23 @@ import {
   Layers,
   Sparkles,
   Download,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Wallet,
+  Banknote,
+  CreditCard,
+  ArrowRight,
+  ShieldCheck,
+  Building2,
+  Zap,
+  Droplets,
+  Package
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
   AreaChart, 
   Area, 
+  LineChart,
+  Line,
   XAxis, 
   YAxis, 
   Tooltip, 
@@ -34,223 +44,446 @@ import {
 } from 'recharts';
 
 export const OwnerDashboard: React.FC = () => {
-  const { setOwnerTab } = useLaundry();
-  const [timeRange, setTimeRange] = useState<'weekly' | 'monthly'>('weekly');
-
   const { 
-    todayRevenue, 
-    monthlyRevenue, 
-    ordersCount, 
-    completedCount, 
-    pendingCount, 
-    expensesTotal, 
-    netRevenue,
-    revenueTrend,
-    monthlyTrend,
-    popularServices,
-    statusBreakdown,
-    peakHours
-  } = OWNER_ANALYTICS;
+    setOwnerTab, 
+    payments, 
+    expenses, 
+    tickets, 
+    services, 
+    customers, 
+    addToast 
+  } = useLaundry();
 
-  const currentTrendData = (timeRange === 'weekly' ? revenueTrend : monthlyTrend).map(item => ({
-    label: 'day' in item ? item.day : item.month,
-    revenue: item.revenue,
-    expenses: item.expenses,
-    net: item.net,
-  }));
+  const [timeRange, setTimeRange] = useState<'weekly' | 'monthly'>('weekly');
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().substring(0, 10));
+  const yAxisDomain = useMemo(() => timeRange === 'weekly' ? [0, 10000] : [1000, 30000], [timeRange]);
 
-  const statusData = [
-    { name: 'Received', value: statusBreakdown.received, color: '#94a3b8' },
-    { name: 'Washing', value: statusBreakdown.washing, color: '#f59e0b' },
-    { name: 'Drying', value: statusBreakdown.drying, color: '#0284c7' },
-    { name: 'Folding', value: statusBreakdown.folding, color: '#9333ea' },
-    { name: 'Ready', value: statusBreakdown.ready, color: '#10b981' },
-    { name: 'Completed', value: statusBreakdown.completed, color: '#0d9488' }
-  ];
+  const revenueOnSelectedDate = useMemo(() => {
+    return payments
+      .filter(p => p.date && p.date.substring(0, 10) === selectedDate)
+      .reduce((sum, p) => sum + p.amount, 0);
+  }, [payments, selectedDate]);
+
+  // ==========================================
+  // 1. FINANCIAL REPORTS DATA AGGREGATION
+  // ==========================================
+
+  // KPIs Aggregation
+  const latestDateStr = useMemo(() => {
+    if (payments.length > 0) {
+      const dates = payments.map(p => p.date ? p.date.substring(0, 10) : '').filter(Boolean);
+      dates.sort((a, b) => b.localeCompare(a));
+      return dates[0] || '2026-08-31';
+    }
+    return '2026-08-31';
+  }, [payments]);
+
+  const totalRevenue = useMemo(() => {
+    return payments.reduce((sum, p) => sum + (p.paymentStatus === 'PAID' ? p.amount : p.amount), 0);
+  }, [payments]);
+
+  const revenueToday = useMemo(() => {
+    return payments
+      .filter(p => p.date && p.date.startsWith(latestDateStr))
+      .reduce((sum, p) => sum + p.amount, 0);
+  }, [payments, latestDateStr]);
+
+  const revenueWeekly = useMemo(() => {
+    const d7DaysAgo = '2026-08-24';
+    return payments
+      .filter(p => p.date && p.date.substring(0, 10) >= d7DaysAgo)
+      .reduce((sum, p) => sum + p.amount, 0);
+  }, [payments]);
+
+  const revenueMonthly = useMemo(() => {
+    const d30DaysAgo = '2026-08-01';
+    return payments
+      .filter(p => p.date && p.date.substring(0, 10) >= d30DaysAgo)
+      .reduce((sum, p) => sum + p.amount, 0);
+  }, [payments]);
+
+  const totalExpenses = useMemo(() => {
+    return expenses.reduce((sum, e) => sum + e.amount, 0);
+  }, [expenses]);
+
+  // Payment Method Breakdown from Financial Reports
+  const paymentMethodStats = useMemo(() => {
+    let cash = 0;
+    let gcash = 0;
+    let maya = 0;
+
+    payments.forEach(p => {
+      if (p.paymentMethod === 'CASH') cash += p.amount;
+      else if (p.paymentMethod === 'GCASH') gcash += p.amount;
+      else if (p.paymentMethod === 'MAYA') maya += p.amount;
+      else cash += p.amount;
+    });
+
+    const total = cash + gcash + maya || 1;
+    return {
+      cash,
+      cashPct: Math.round((cash / total) * 100),
+      gcash,
+      gcashPct: Math.round((gcash / total) * 100),
+      maya,
+      mayaPct: Math.round((maya / total) * 100),
+      total
+    };
+  }, [payments]);
+
+  // Expense Categories Breakdown from Financial Reports
+  const expenseCategoryStats = useMemo(() => {
+    const map = new Map<string, number>();
+    expenses.forEach(e => {
+      const cat = e.category || 'General';
+      map.set(cat, (map.get(cat) || 0) + e.amount);
+    });
+
+    return Array.from(map.entries())
+      .map(([name, amount]) => ({
+        name,
+        amount,
+        percentage: totalExpenses > 0 ? Math.round((amount / totalExpenses) * 100) : 0
+      }))
+      .sort((a, b) => b.amount - a.amount);
+  }, [expenses, totalExpenses]);
+
+  // ==========================================
+  // 2. DYNAMIC REVENUE & PROFIT TRENDS
+  // ==========================================
+  const trendData = useMemo(() => {
+    if (timeRange === 'weekly') {
+      // Group payments and expenses by Date
+      const dateMap = new Map<string, { revenue: number; expenses: number }>();
+
+      // Seed with recent distinct dates from payments & expenses
+      payments.forEach(p => {
+        const d = p.date ? p.date.substring(0, 10) : '2026-08-31';
+        if (!dateMap.has(d)) dateMap.set(d, { revenue: 0, expenses: 0 });
+        dateMap.get(d)!.revenue += p.amount;
+      });
+
+      expenses.forEach(e => {
+        const d = e.date ? e.date.substring(0, 10) : '2026-08-31';
+        if (!dateMap.has(d)) dateMap.set(d, { revenue: 0, expenses: 0 });
+        dateMap.get(d)!.expenses += e.amount;
+      });
+
+      // Sort dates chronologically
+      const sorted = Array.from(dateMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+
+      return sorted.map(([dateKey, values]) => {
+        // Format label: "Aug 31"
+        const parts = dateKey.split('-');
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const m = parseInt(parts[1], 10) || 8;
+        const d = parseInt(parts[2], 10) || 31;
+        const label = `${monthNames[m - 1]} ${d}`;
+
+        return {
+          label,
+          fullDate: dateKey,
+          revenue: values.revenue,
+          expenses: values.expenses,
+          net: values.revenue - values.expenses
+        };
+      });
+    } else {
+      // Monthly aggregation
+      const monthMap = new Map<string, { revenue: number; expenses: number }>();
+      const defaultMonths = ['2026-05', '2026-06', '2026-07', '2026-08'];
+      
+      defaultMonths.forEach(m => {
+        monthMap.set(m, { revenue: 0, expenses: 0 });
+      });
+
+      // Historical baseline
+      monthMap.set('2026-05', { revenue: 168000, expenses: 41200 });
+      monthMap.set('2026-06', { revenue: 174000, expenses: 39800 });
+      monthMap.set('2026-07', { revenue: 179500, expenses: 43100 });
+      monthMap.set('2026-08', { revenue: totalRevenue, expenses: totalExpenses });
+
+      const monthNames: Record<string, string> = {
+        '2026-05': 'May 2026',
+        '2026-06': 'Jun 2026',
+        '2026-07': 'Jul 2026',
+        '2026-08': 'Aug 2026 (MTD)'
+      };
+
+      return Array.from(monthMap.entries()).map(([mKey, values]) => ({
+        label: monthNames[mKey] || mKey,
+        fullDate: mKey,
+        revenue: values.revenue,
+        expenses: values.expenses,
+        net: values.revenue - values.expenses
+      }));
+    }
+  }, [timeRange, payments, expenses, totalRevenue, totalExpenses]);
+
+  // ==========================================
+  // 3. SERVICE REVENUE BREAKDOWN FROM TICKETS
+  // ==========================================
+  const serviceStats = useMemo(() => {
+    const map = new Map<string, { count: number; revenue: number }>();
+
+    tickets.forEach(t => {
+      const sName = t.serviceName || 'Wash & Fold';
+      if (!map.has(sName)) map.set(sName, { count: 0, revenue: 0 });
+      const entry = map.get(sName)!;
+      entry.count += 1;
+      entry.revenue += t.totalAmount || 0;
+    });
+
+    const colors = ['#0ea5e9', '#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
+    const totalTicketRev = Array.from(map.values()).reduce((sum, v) => sum + v.revenue, 0) || 1;
+
+    return Array.from(map.entries())
+      .map(([name, data], idx) => ({
+        name,
+        count: data.count,
+        revenue: data.revenue,
+        percentage: Math.round((data.revenue / totalTicketRev) * 100),
+        color: colors[idx % colors.length]
+      }))
+      .sort((a, b) => b.revenue - a.revenue);
+  }, [tickets]);
+
+  // ==========================================
+  // 4. OPERATIONAL TICKETS & STATUS FUNNEL
+  // ==========================================
+  const totalOrders = tickets.length;
+  const completedOrders = tickets.filter(t => t.status === 'COMPLETED').length;
+  const pendingOrders = tickets.filter(t => t.status !== 'COMPLETED' && t.status !== 'CANCELLED').length;
+
+  const statusBreakdown = useMemo(() => {
+    return [
+      { name: 'Received', count: tickets.filter(t => t.status === 'RECEIVED').length, color: '#94a3b8' },
+      { name: 'Washing', count: tickets.filter(t => t.status === 'WASHING').length, color: '#f59e0b' },
+      { name: 'Drying', count: tickets.filter(t => t.status === 'DRYING').length, color: '#0284c7' },
+      { name: 'Folding', count: tickets.filter(t => t.status === 'FOLDING').length, color: '#9333ea' },
+      { name: 'Ready', count: tickets.filter(t => t.status === 'READY').length, color: '#10b981' },
+      { name: 'Completed', count: tickets.filter(t => t.status === 'COMPLETED').length, color: '#0d9488' }
+    ];
+  }, [tickets]);
 
   return (
     <div id="owner-dashboard-view" className="space-y-6">
       
       {/* Executive Header Banner */}
-      <div className="bg-slate-900 text-white rounded-2xl p-5 sm:p-6 shadow-md border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-slate-900 text-white rounded-3xl p-5 sm:p-6 shadow-md border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-wider">
-              Executive Business Intelligence
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase tracking-wider flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Live Financial Reports Sync
             </span>
-            <span className="text-xs text-slate-400">Tapcard Laundry Shop</span>
+            <span className="text-xs text-slate-400 font-medium">Tapcard Laundry Shop</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight mt-1">
-            Owner Financial & Operations Health
+            Executive Financial & Operations Dashboard
           </h1>
           <p className="text-xs text-slate-300">
-            Real-time profit & loss, unit economics, service margins, and customer retention
+            Real-time data sourced directly from your Total Revenue files, Expense logs, and POS records
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setOwnerTab('reports')}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-xs flex items-center gap-2"
-          >
-            <BarChart3 size={15} />
-            <span>View Full Financial Reports</span>
-          </button>
         </div>
       </div>
 
-      {/* Top Financial Health KPIs (Section 15 Exact Metrics) */}
+      {/* Top Financial Health KPIs - Fed from Financial Reports */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         
-        {/* Today's Revenue */}
+        {/* Revenue Today */}
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold uppercase tracking-wider">Today's Revenue</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Revenue Today</span>
             <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xs">
               ₱
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono tracking-tight">
-            ₱{todayRevenue.toLocaleString()}
+            ₱{revenueToday.toLocaleString()}
           </div>
-          <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1 pt-1">
-            <ArrowUpRight size={13} />
-            <span>47 Orders processed today</span>
-          </span>
         </div>
 
-        {/* Monthly Revenue */}
+        {/* Revenue Weekly */}
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold uppercase tracking-wider">Monthly Gross Revenue</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Revenue Weekly</span>
             <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs">
-              <TrendingUp size={14} />
+              <Calendar size={14} />
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono tracking-tight">
-            ₱{monthlyRevenue.toLocaleString()}
+            ₱{revenueWeekly.toLocaleString()}
           </div>
-          <span className="text-[11px] text-indigo-600 font-semibold block pt-1">
-            August 2026 MTD
-          </span>
         </div>
 
-        {/* Monthly Expenses */}
+        {/* Revenue Monthly */}
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold uppercase tracking-wider">Total Expenses (P&L)</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Revenue Monthly</span>
+            <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs">
+              <BarChart3 size={14} />
+            </div>
+          </div>
+          <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono tracking-tight">
+            ₱{revenueMonthly.toLocaleString()}
+          </div>
+        </div>
+
+        {/* Total Expense */}
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-xs font-bold uppercase tracking-wider">Total Expense</span>
             <div className="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-xs">
               <Receipt size={14} />
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-extrabold text-rose-700 font-mono tracking-tight">
-            ₱{expensesTotal.toLocaleString()}
+            ₱{totalExpenses.toLocaleString()}
           </div>
-          <span className="text-[11px] text-slate-500 block pt-1">
-            22.9% expense-to-revenue ratio
-          </span>
-        </div>
-
-        {/* Net Revenue / Profit */}
-        <div className="bg-gradient-to-br from-emerald-50 to-teal-50/70 p-4 sm:p-5 rounded-2xl border border-emerald-200 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between text-emerald-800">
-            <span className="text-xs font-extrabold uppercase tracking-wider">Net Monthly Profit</span>
-            <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">
-              <DollarSign size={14} />
-            </div>
-          </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-emerald-950 font-mono tracking-tight">
-            ₱{netRevenue.toLocaleString()}
-          </div>
-          <span className="text-[11px] text-emerald-700 font-bold block pt-1">
-            77.1% Net Operating Margin
-          </span>
         </div>
 
       </div>
 
-      {/* Secondary Operational Counters */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] text-slate-400 font-medium block">Total Orders</span>
-            <span className="text-xl font-extrabold font-mono text-slate-900">{ordersCount}</span>
-          </div>
-          <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600">
-            <ShoppingBag size={16} />
-          </div>
-        </div>
 
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] text-slate-400 font-medium block">Completed Pickups</span>
-            <span className="text-xl font-extrabold font-mono text-emerald-700">{completedCount}</span>
-          </div>
-          <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
-            <CheckCircle2 size={16} />
-          </div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] text-slate-400 font-medium block">Pending in Pipeline</span>
-            <span className="text-xl font-extrabold font-mono text-amber-700">{pendingCount}</span>
-          </div>
-          <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
-            <Clock size={16} />
-          </div>
-        </div>
-      </div>
-
-      {/* Main Charts Row: Revenue & Profit Trend (Section 15) */}
+      {/* Main Charts Row: Revenue & Profit Trend from Reports */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         
-        {/* Left: Revenue Trend Area Chart (8 cols) */}
-        <div className="lg:col-span-8 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+        {/* Left: Revenue Trend Area Chart (6 cols) */}
+        <div className="lg:col-span-6 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <h2 className="font-extrabold text-base text-slate-900 tracking-tight">
-                Revenue & Profitability Trend
+                Performance Overview
               </h2>
               <p className="text-xs text-slate-500">
-                Gross sales compared with shop expenses and net take-home
+                Comparing gross sales with net profit over selected periods
               </p>
             </div>
-
+            
             {/* Time toggle */}
             <div className="bg-slate-100 p-0.5 rounded-xl border border-slate-200 flex text-xs font-semibold self-start sm:self-auto">
               <button
+                type="button"
                 onClick={() => setTimeRange('weekly')}
-                className={`px-3 py-1 rounded-lg transition-all ${
+                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
                   timeRange === 'weekly' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-500'
                 }`}
               >
-                7 Days (Weekly)
+                Weekly
               </button>
               <button
+                type="button"
                 onClick={() => setTimeRange('monthly')}
-                className={`px-3 py-1 rounded-lg transition-all ${
+                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
                   timeRange === 'monthly' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-500'
                 }`}
               >
-                6 Months (MTD)
+                Monthly
               </button>
             </div>
           </div>
 
           <div className="h-72 w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={currentTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.0}/>
-                  </linearGradient>
-                  <linearGradient id="colorNet" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0.0}/>
-                  </linearGradient>
-                </defs>
+              <LineChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis 
+                  dataKey="label" 
+                  tick={{ fontSize: 11, fill: '#64748b' }}
+                  axisLine={{ stroke: '#cbd5e1' }}
+                  tickLine={false}
+                />
+                <YAxis 
+                  tick={{ fontSize: 11, fill: '#64748b' }}
+                  axisLine={false}
+                  tickLine={false}
+                  domain={yAxisDomain}
+                  tickFormatter={(val) => `₱${val >= 1000 ? `${(val/1000).toFixed(0)}k` : val}`}
+                />
+                <Tooltip 
+                  formatter={(val: any) => [`₱${Number(val).toLocaleString()}`, '']}
+                  contentStyle={{ 
+                    backgroundColor: '#0f172a', 
+                    color: '#fff', 
+                    borderRadius: '12px', 
+                    fontSize: '12px', 
+                    border: 'none',
+                    boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3)'
+                  }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="revenue" 
+                  name="Gross Sales" 
+                  stroke="#10b981" 
+                  strokeWidth={2.5} 
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="net" 
+                  name="Net Profit" 
+                  stroke="#6366f1" 
+                  strokeWidth={2} 
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="flex items-center justify-center gap-6 pt-2 border-t border-slate-100 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-emerald-500" />
+              <span className="font-semibold text-slate-700">Gross Revenue</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-indigo-500" />
+              <span className="font-semibold text-slate-700">Net Profit</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Total Expense Trend (6 cols) */}
+        <div className="lg:col-span-6 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h2 className="font-extrabold text-base text-slate-900 tracking-tight">
+                Total Expense Trend
+              </h2>
+              <p className="text-xs text-slate-500">
+                Expense tracking over selected periods
+              </p>
+            </div>
+            
+            {/* Time toggle */}
+            <div className="bg-slate-100 p-0.5 rounded-xl border border-slate-200 flex text-xs font-semibold self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setTimeRange('weekly')}
+                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                  timeRange === 'weekly' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-500'
+                }`}
+              >
+                Weekly
+              </button>
+              <button
+                type="button"
+                onClick={() => setTimeRange('monthly')}
+                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                  timeRange === 'monthly' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-500'
+                }`}
+              >
+                Monthly
+              </button>
+            </div>
+          </div>
+
+          {/* Expense trend line chart */}
+          <div className="h-[310px] w-full pt-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                 <XAxis 
                   dataKey="label" 
@@ -275,146 +508,60 @@ export const OwnerDashboard: React.FC = () => {
                     boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3)'
                   }}
                 />
-                <Area 
+                <Line 
                   type="monotone" 
-                  dataKey="revenue" 
-                  name="Gross Revenue" 
-                  stroke="#10b981" 
+                  dataKey="expenses" 
+                  name="Expenses" 
+                  stroke="#e11d48" 
                   strokeWidth={2.5} 
-                  fillOpacity={1} 
-                  fill="url(#colorRevenue)" 
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="net" 
-                  name="Net Profit" 
-                  stroke="#6366f1" 
-                  strokeWidth={2} 
-                  fillOpacity={1} 
-                  fill="url(#colorNet)" 
-                />
-              </AreaChart>
+              </LineChart>
             </ResponsiveContainer>
           </div>
 
           <div className="flex items-center justify-center gap-6 pt-2 border-t border-slate-100 text-xs">
             <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-emerald-500" />
-              <span className="font-semibold text-slate-700">Gross Sales</span>
+              <span className="w-3 h-3 rounded-full bg-rose-600" />
+              <span className="font-semibold text-slate-700">Total Expenses</span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-indigo-500" />
-              <span className="font-semibold text-slate-700">Net Profit</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Popular Services Breakdown (4 cols) */}
-        <div className="lg:col-span-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between">
-              <h2 className="font-extrabold text-base text-slate-900 tracking-tight">
-                Popular Services
-              </h2>
-              <PieChartIcon size={16} className="text-slate-400" />
-            </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Service share and revenue distribution
-            </p>
-          </div>
-
-          {/* Progress list matching Section 15: Wash & Fold 45%, Dry Clean 25%, Ironing 18%, Other 12% */}
-          <div className="space-y-3.5 my-auto">
-            {popularServices.map((srv) => (
-              <div key={srv.name} className="space-y-1 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-800">{srv.name}</span>
-                  <span className="font-mono font-extrabold text-slate-900">{srv.percentage}%</span>
-                </div>
-                <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
-                  <div 
-                    className="h-full rounded-full transition-all duration-500" 
-                    style={{ width: `${srv.percentage}%`, backgroundColor: srv.color }}
-                  />
-                </div>
-                <div className="flex items-center justify-between text-[11px] text-slate-400">
-                  <span>{srv.count} orders</span>
-                  <span className="font-mono text-emerald-700 font-semibold">₱{srv.revenue.toLocaleString()}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-600">
-            <strong className="text-slate-800">Observation:</strong> Wash & Fold provides 45% of orders but Dry Cleaning yields the highest per-ticket margin.
           </div>
         </div>
 
       </div>
 
-      {/* Secondary Analytics Row: Peak Rush Hours & Laundry Status Distribution */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      {/* Date Revenue Calendar */}
+      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-extrabold text-base text-slate-900 tracking-tight">
+              Revenue Calendar
+            </h2>
+            <p className="text-xs text-slate-500">
+              Select a date to view total revenue
+            </p>
+          </div>
+
+        </div>
         
-        {/* Peak Rush Hours (6 cols) */}
-        <div className="lg:col-span-6 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-          <div>
-            <h2 className="font-extrabold text-base text-slate-900 tracking-tight">
-              Customer Rush Hours (Drop-off & Pickup)
-            </h2>
-            <p className="text-xs text-slate-500">
-              Staff scheduling optimizer based on customer arrival volume
-            </p>
-          </div>
-
-          <div className="h-56 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={peakHours} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                <XAxis dataKey="hour" tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '10px', fontSize: '12px' }}
-                />
-                <Bar dataKey="volume" name="Orders Volume" fill="#0ea5e9" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Laundry Status Funnel (6 cols) */}
-        <div className="lg:col-span-6 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-          <div>
-            <h2 className="font-extrabold text-base text-slate-900 tracking-tight">
-              Laundry Status Distribution
-            </h2>
-            <p className="text-xs text-slate-500">
-              Current operational throughput across all machines
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
-            {statusData.map((st) => (
-              <div 
-                key={st.name} 
-                className="p-3 rounded-xl border border-slate-200 bg-slate-50/50 flex flex-col justify-between"
+        <div className="grid grid-cols-7 gap-1">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+            <div key={d} className="text-[10px] font-bold text-slate-400 text-center py-1">{d}</div>
+          ))}
+          {Array.from({ length: 30 }).map((_, i) => {
+            const day = i + 1;
+            const dateStr = `2026-09-${day.toString().padStart(2, '0')}`;
+            const isSelected = dateStr === selectedDate;
+            return (
+              <button
+                key={day}
+                onClick={() => setSelectedDate(dateStr)}
+                className={`py-2 text-xs font-semibold rounded-lg ${isSelected ? 'bg-indigo-600 text-white' : 'hover:bg-slate-100 text-slate-700'}`}
               >
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: st.color }} />
-                  <span className="text-[11px] font-bold text-slate-600 uppercase">{st.name}</span>
-                </div>
-                <span className="text-2xl font-extrabold font-mono text-slate-900 mt-2">
-                  {st.value}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl text-[11px] text-emerald-900 flex items-center justify-between">
-            <span>Machine Utilization: <strong>88% Optimal Capacity</strong></span>
-            <span className="font-mono font-bold">No backlogs</span>
-          </div>
+                {day}
+              </button>
+            );
+          })}
         </div>
-
       </div>
 
     </div>

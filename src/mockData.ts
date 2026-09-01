@@ -276,7 +276,7 @@ export const INITIAL_TICKETS: Ticket[] = [
     status: 'WASHING',
     statusHistory: [
       {
-        status: 'RECEIVED',
+        status: 'WASHING',
         timestamp: '2026-08-31 08:30 AM',
         updatedBy: 'Staff Arlene',
         note: 'Customer dropped off 1 bag (5.0 kg). Paid in full.'
@@ -328,10 +328,10 @@ export const INITIAL_TICKETS: Ticket[] = [
     amountPaid: 570,
     paymentStatus: 'PAID',
     paymentMethod: 'GCASH',
-    status: 'DRYING',
+    status: 'WASHING',
     statusHistory: [
       {
-        status: 'RECEIVED',
+        status: 'WASHING',
         timestamp: '2026-08-31 07:45 AM',
         updatedBy: 'Staff Arlene',
         note: 'Dropped off 2 bags. Paid via GCash.'
@@ -342,7 +342,7 @@ export const INITIAL_TICKETS: Ticket[] = [
         updatedBy: 'Staff Mark'
       },
       {
-        status: 'DRYING',
+        status: 'WASHING',
         timestamp: '2026-08-31 09:30 AM',
         updatedBy: 'Staff Mark',
         note: 'Transfer to Dryer #2 (Medium Heat 45m)'
@@ -390,7 +390,7 @@ export const INITIAL_TICKETS: Ticket[] = [
     status: 'READY',
     statusHistory: [
       {
-        status: 'RECEIVED',
+        status: 'WASHING',
         timestamp: '2026-08-30 02:15 PM',
         updatedBy: 'Staff Mark'
       },
@@ -400,7 +400,7 @@ export const INITIAL_TICKETS: Ticket[] = [
         updatedBy: 'Staff Mark'
       },
       {
-        status: 'DRYING',
+        status: 'WASHING',
         timestamp: '2026-08-30 04:30 PM',
         updatedBy: 'Staff Arlene'
       },
@@ -449,7 +449,7 @@ export const INITIAL_TICKETS: Ticket[] = [
     status: 'READY',
     statusHistory: [
       {
-        status: 'RECEIVED',
+        status: 'WASHING',
         timestamp: '2026-08-30 04:30 PM',
         updatedBy: 'Staff Arlene'
       },
@@ -459,7 +459,7 @@ export const INITIAL_TICKETS: Ticket[] = [
         updatedBy: 'Staff Mark'
       },
       {
-        status: 'DRYING',
+        status: 'WASHING',
         timestamp: '2026-08-30 06:45 PM',
         updatedBy: 'Staff Mark'
       },
@@ -517,7 +517,7 @@ export const INITIAL_TICKETS: Ticket[] = [
     status: 'FOLDING',
     statusHistory: [
       {
-        status: 'RECEIVED',
+        status: 'WASHING',
         timestamp: '2026-08-30 11:00 AM',
         updatedBy: 'Staff Arlene'
       },
@@ -527,7 +527,7 @@ export const INITIAL_TICKETS: Ticket[] = [
         updatedBy: 'Specialist Noel'
       },
       {
-        status: 'DRYING',
+        status: 'WASHING',
         timestamp: '2026-08-30 04:00 PM',
         updatedBy: 'Specialist Noel'
       },
@@ -566,10 +566,10 @@ export const INITIAL_TICKETS: Ticket[] = [
     amountPaid: 280,
     paymentStatus: 'PAID',
     paymentMethod: 'GCASH',
-    status: 'RECEIVED',
+    status: 'WASHING',
     statusHistory: [
       {
-        status: 'RECEIVED',
+        status: 'WASHING',
         timestamp: '2026-08-31 09:40 AM',
         updatedBy: 'Staff Arlene',
         note: 'Queued for sorting and spot stain treatment.'
@@ -616,7 +616,7 @@ export const INITIAL_TICKETS: Ticket[] = [
     status: 'COMPLETED',
     statusHistory: [
       {
-        status: 'RECEIVED',
+        status: 'WASHING',
         timestamp: '2026-08-29 10:00 AM',
         updatedBy: 'Staff Arlene'
       },
@@ -626,7 +626,7 @@ export const INITIAL_TICKETS: Ticket[] = [
         updatedBy: 'Staff Mark'
       },
       {
-        status: 'DRYING',
+        status: 'WASHING',
         timestamp: '2026-08-29 01:15 PM',
         updatedBy: 'Staff Mark'
       },
@@ -689,7 +689,7 @@ export const INITIAL_TICKETS: Ticket[] = [
     status: 'READY',
     statusHistory: [
       {
-        status: 'RECEIVED',
+        status: 'WASHING',
         timestamp: '2026-08-30 09:15 AM',
         updatedBy: 'Staff Arlene'
       },
@@ -699,7 +699,7 @@ export const INITIAL_TICKETS: Ticket[] = [
         updatedBy: 'Staff Mark'
       },
       {
-        status: 'DRYING',
+        status: 'WASHING',
         timestamp: '2026-08-30 01:00 PM',
         updatedBy: 'Staff Mark'
       },
@@ -757,7 +757,7 @@ export const INITIAL_TICKETS: Ticket[] = [
     status: 'READY',
     statusHistory: [
       {
-        status: 'RECEIVED',
+        status: 'WASHING',
         timestamp: '2026-08-30 11:30 AM',
         updatedBy: 'Staff Arlene',
         note: 'Initial deposit ₱300 paid via Maya.'
@@ -768,7 +768,7 @@ export const INITIAL_TICKETS: Ticket[] = [
         updatedBy: 'Staff Mark'
       },
       {
-        status: 'DRYING',
+        status: 'WASHING',
         timestamp: '2026-08-30 03:30 PM',
         updatedBy: 'Staff Mark'
       },
@@ -816,7 +816,7 @@ export const INITIAL_TICKETS: Ticket[] = [
     status: 'READY',
     statusHistory: [
       {
-        status: 'RECEIVED',
+        status: 'WASHING',
         timestamp: '2026-08-30 08:30 AM',
         updatedBy: 'Staff Arlene'
       },
@@ -826,7 +826,7 @@ export const INITIAL_TICKETS: Ticket[] = [
         updatedBy: 'Specialist Noel'
       },
       {
-        status: 'DRYING',
+        status: 'WASHING',
         timestamp: '2026-08-30 02:00 PM',
         updatedBy: 'Specialist Noel'
       },
@@ -1163,34 +1163,43 @@ export const AUTH_USERS: AuthUser[] = [
   {
     id: 'user-admin-1',
     name: 'Arlene Santos',
+    username: 'admin',
     email: 'admin@tapcard.ph',
     role: 'ADMIN',
     staffCode: 'STF-04',
     title: 'Lead Counter Cashier',
     pin: '1234',
+    password: '1234',
     branch: 'Makati Central Branch',
-    shift: 'Morning Shift (7:00 AM - 3:00 PM)'
+    shift: 'Morning Shift (7:00 AM - 3:00 PM)',
+    status: 'ACTIVE'
   },
   {
     id: 'user-admin-2',
     name: 'Luis Miguel',
+    username: 'staff',
     email: 'staff@tapcard.ph',
     role: 'ADMIN',
     staffCode: 'STF-02',
     title: 'Senior Laundry Operator',
     pin: '5678',
+    password: '5678',
     branch: 'Makati Central Branch',
-    shift: 'Afternoon Shift (1:00 PM - 9:00 PM)'
+    shift: 'Afternoon Shift (1:00 PM - 9:00 PM)',
+    status: 'ACTIVE'
   },
   {
     id: 'user-owner-1',
     name: 'Alex Morgan',
+    username: 'owner',
     email: 'owner@tapcard.ph',
     role: 'OWNER',
     staffCode: 'OWN-01',
     title: 'Shop Owner & Managing Director',
     pin: '8888',
+    password: '8888',
     branch: 'Tapcard Headquarters / All Branches',
-    shift: 'Executive Access (Full Privileges)'
+    shift: 'Executive Access (Full Privileges)',
+    status: 'ACTIVE'
   }
 ];

@@ -44,20 +44,13 @@ export const Sidebar: React.FC = () => {
   const adminNavItems: Array<{ id: AdminTab; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; badge?: number; isHighlight?: boolean }> = [
     { id: 'dashboard' as AdminTab, label: 'Dashboard', icon: LayoutDashboard },
     { id: 'create-ticket' as AdminTab, label: 'Create Ticket (POS)', icon: PlusCircle, isHighlight: true },
-    { id: 'customers' as AdminTab, label: 'Customers', icon: Users },
     { id: 'expenses' as AdminTab, label: 'Expense Tracker', icon: Receipt },
     { id: 'reports' as AdminTab, label: 'Operational Reports', icon: FileText },
   ];
 
-  // Boss / Owner navigation items (Full Executive Management & Store Configuration)
-  const ownerNavItems = [
+  // Boss / Owner navigation items (Streamlined Management & Store Configuration)
+  const ownerNavItems: Array<{ id: OwnerTab; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; badge?: number }> = [
     { id: 'dashboard' as OwnerTab, label: 'Executive Dashboard', icon: LayoutDashboard },
-    { id: 'tickets' as OwnerTab, label: 'All Orders & Tickets', icon: TicketIcon, badge: tickets.length },
-    { id: 'customers' as OwnerTab, label: 'Customer Retention', icon: Users },
-    { id: 'services' as OwnerTab, label: 'Services & Pricing', icon: Tag },
-    { id: 'revenue' as OwnerTab, label: 'Revenue & Ledger', icon: DollarSign },
-    { id: 'expenses' as OwnerTab, label: 'Expense Tracker', icon: Receipt, badge: pendingAuditsCount > 0 ? pendingAuditsCount : undefined },
-    { id: 'analytics' as OwnerTab, label: 'Business Analytics', icon: BarChart3 },
     { id: 'reports' as OwnerTab, label: 'Financial Reports', icon: FileText },
     { id: 'settings' as OwnerTab, label: 'Business Settings', icon: SettingsIcon },
   ];
@@ -86,14 +79,22 @@ export const Sidebar: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2.5">
-              <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs text-white ${
-                currentUser.role === 'OWNER' ? 'bg-indigo-600' : 'bg-emerald-600'
-              }`}>
-                {currentUser.name.charAt(0)}
-              </div>
+              {currentUser.avatarUrl ? (
+                <img 
+                  src={currentUser.avatarUrl} 
+                  alt={currentUser.name} 
+                  className="w-8 h-8 rounded-xl object-cover ring-1 ring-slate-700" 
+                />
+              ) : (
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs text-white ${
+                  currentUser.role === 'OWNER' ? 'bg-indigo-600' : 'bg-emerald-600'
+                }`}>
+                  {currentUser.name.charAt(0)}
+                </div>
+              )}
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-bold truncate leading-tight text-white">{currentUser.name}</p>
-                <p className="text-[10px] text-slate-400 truncate">{currentUser.title}</p>
+                <p className="text-[10px] text-slate-400 truncate">@{currentUser.username || currentUser.name.toLowerCase()}</p>
               </div>
             </div>
 

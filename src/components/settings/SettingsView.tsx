@@ -1,231 +1,288 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLaundry } from '../../context/LaundryContext';
+import { ServicesManagement } from '../admin/ServicesManagement';
+import { StaffManagement } from '../admin/StaffManagement';
 import { 
   Store, 
-  Clock, 
   Users, 
-  Sliders, 
-  Bell, 
-  ShieldCheck, 
   Save, 
-  Check, 
-  Smartphone,
-  Printer,
-  Sparkles
+  Tag,
+  ShieldCheck,
+  User,
+  Lock,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 export const SettingsView: React.FC = () => {
-  const { addToast } = useLaundry();
+  const { authUsers, updateStaff, addToast } = useLaundry();
+  const [activeSettingsTab, setActiveSettingsTab] = useState<'profile' | 'services' | 'staff'>('profile');
+
+  // Shop Profile state
   const [shopName, setShopName] = useState('TAPCARD LAUNDRY SHOP');
   const [tagline, setTagline] = useState('Professional Wash, Dry & Fold Services');
   const [phone, setPhone] = useState('0917 555 8921');
   const [address, setAddress] = useState('Unit 102 Greenwoods Arcade, Pasig City');
-  const [birNumber, setBirNumber] = useState('TIN-009-482-114-000');
-  const [ticketPrefix, setTicketPrefix] = useState('LM');
-  const [smsReadyAlert, setSmsReadyAlert] = useState(true);
-  const [autoPrintStub, setAutoPrintStub] = useState(true);
   const [operatingHours, setOperatingHours] = useState('7:00 AM - 9:00 PM Daily');
+
+  // Owner Credentials state
+  const ownerUser = authUsers.find(u => u.role === 'OWNER') || authUsers[0];
+  const [ownerUsername, setOwnerUsername] = useState(ownerUser?.username || 'owner');
+  const [ownerPassword, setOwnerPassword] = useState(ownerUser?.password || ownerUser?.pin || '8888');
+  const [showOwnerPassword, setShowOwnerPassword] = useState(false);
+
+  // Synchronize when owner user changes
+  useEffect(() => {
+    if (ownerUser) {
+      setOwnerUsername(ownerUser.username || 'owner');
+      setOwnerPassword(ownerUser.password || ownerUser.pin || '8888');
+    }
+  }, [ownerUser?.id, ownerUser?.username, ownerUser?.password, ownerUser?.pin]);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    addToast({
-      title: 'Shop Configuration Saved',
-      message: 'All store parameters, operating hours, and receipt headers updated successfully.',
-      type: 'success'
-    });
+
+    // Update Owner credentials
+    if (ownerUser) {
+      const cleanUsername = ownerUsername.trim().toLowerCase().replace(/\s+/g, '') || 'owner';
+      const cleanPassword = ownerPassword.trim() || '8888';
+
+      updateStaff(ownerUser.id, {
+        username: cleanUsername,
+        password: cleanPassword,
+        pin: cleanPassword
+      });
+    }
+
+    addToast(
+      'Shop Profile & Owner Credentials Saved',
+      'Store information and owner login details have been updated successfully.',
+      'success'
+    );
   };
 
   return (
-    <div id="settings-view" className="space-y-6 max-w-4xl">
+    <div id="settings-view" className="space-y-6 max-w-5xl">
       
       {/* Header */}
       <div>
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-700 border border-indigo-200 uppercase tracking-wider">
-            Boss / Owner Configuration
-          </span>
-          <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
-            <Sparkles size={12} />
-            Connected to Thermal Stubs & POS Cashier
-          </span>
-        </div>
         <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-          Shop & System Settings
+          Business Settings
         </h1>
         <p className="text-xs text-slate-500">
-          Configure business metadata, claim stub thermal printing, tax rates, and SMS ready notifications
+          Manage shop profile, owner login, laundry services & pricing, and admin users.
         </p>
       </div>
 
-      <form onSubmit={handleSave} className="space-y-5">
-        
-        {/* 1. Shop Profile */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-            <Store size={18} className="text-slate-700" />
-            <h2 className="font-extrabold text-sm text-slate-900">Shop Profile & Receipt Header</h2>
-          </div>
+      {/* Sub-navigation Tabs */}
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-1 overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => setActiveSettingsTab('profile')}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+            activeSettingsTab === 'profile'
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <Store size={15} className={activeSettingsTab === 'profile' ? 'text-indigo-300' : 'text-slate-400'} />
+          <span>Shop Profile</span>
+        </button>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div>
-              <label className="font-bold text-slate-700 block mb-1">Laundry Shop Business Name</label>
-              <input
-                type="text"
-                value={shopName}
-                onChange={(e) => setShopName(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold text-slate-800"
-              />
+        <button
+          type="button"
+          onClick={() => setActiveSettingsTab('services')}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+            activeSettingsTab === 'services'
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <Tag size={15} className={activeSettingsTab === 'services' ? 'text-indigo-300' : 'text-slate-400'} />
+          <span>Services & Pricing</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveSettingsTab('staff')}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+            activeSettingsTab === 'staff'
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <Users size={15} className={activeSettingsTab === 'staff' ? 'text-indigo-300' : 'text-slate-400'} />
+          <span>Admin Users</span>
+        </button>
+      </div>
+
+      {/* Tab 1: Shop Profile */}
+      {activeSettingsTab === 'profile' && (
+        <form onSubmit={handleSave} className="space-y-5 max-w-3xl">
+          
+          {/* Shop Information */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+            <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+              <Store size={18} className="text-slate-700" />
+              <h2 className="font-extrabold text-sm text-slate-900">Shop Profile & Receipt Header</h2>
             </div>
 
-            <div>
-              <label className="font-bold text-slate-700 block mb-1">Tagline / Slogan</label>
-              <input
-                type="text"
-                value={tagline}
-                onChange={(e) => setTagline(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
-
-            <div>
-              <label className="font-bold text-slate-700 block mb-1">Official Mobile / Hotline</label>
-              <input
-                type="text"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
-
-            <div>
-              <label className="font-bold text-slate-700 block mb-1">Operating Hours</label>
-              <input
-                type="text"
-                value={operatingHours}
-                onChange={(e) => setOperatingHours(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="font-bold text-slate-700 block mb-1">Shop Address (Printed on Claim Stub)</label>
-              <input
-                type="text"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* 2. Automation & Notifications */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-            <Bell size={18} className="text-slate-700" />
-            <h2 className="font-extrabold text-sm text-slate-900">Customer Communication & Automation</h2>
-          </div>
-
-          <div className="space-y-3 text-xs">
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
-                <span className="font-bold text-slate-900 block">Instant SMS / Viber "Ready for Pickup" Alert</span>
-                <span className="text-[11px] text-slate-500">
-                  Automatically send a message with the claim link as soon as status is marked READY
+                <label className="font-bold text-slate-700 block mb-1">Laundry Shop Business Name</label>
+                <input
+                  type="text"
+                  value={shopName}
+                  onChange={(e) => setShopName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold text-slate-800"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Tagline / Slogan</label>
+                <input
+                  type="text"
+                  value={tagline}
+                  onChange={(e) => setTagline(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Official Mobile / Hotline</label>
+                <input
+                  type="text"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Operating Hours</label>
+                <input
+                  type="text"
+                  value={operatingHours}
+                  onChange={(e) => setOperatingHours(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="font-bold text-slate-700 block mb-1">Shop Address (Printed on Claim Stub)</label>
+                <input
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Owner Login Credentials */}
+          <div className="bg-white p-5 rounded-2xl border border-indigo-100 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-indigo-50">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold">
+                  <ShieldCheck size={17} />
+                </div>
+                <div>
+                  <h2 className="font-extrabold text-sm text-slate-900">Owner Login Credentials</h2>
+                  <p className="text-[11px] text-slate-500">
+                    Change the username and password used to access Owner / Executive view
+                  </p>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 font-extrabold text-[10px] border border-indigo-200">
+                FULL ACCESS
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              {/* Owner Username */}
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">
+                  Owner Username
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <User size={15} />
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={ownerUsername}
+                    onChange={(e) => setOwnerUsername(e.target.value)}
+                    placeholder="e.g. owner or boss"
+                    className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 font-mono font-bold text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <span className="text-[10px] text-slate-400 mt-1 block">
+                  Sign in with this username on the Owner Login screen.
                 </span>
               </div>
-              <input
-                type="checkbox"
-                checked={smsReadyAlert}
-                onChange={(e) => setSmsReadyAlert(e.target.checked)}
-                className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-              />
-            </div>
 
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
+              {/* Owner Password */}
               <div>
-                <span className="font-bold text-slate-900 block">Auto-Prompt Claim Stub Thermal Print</span>
-                <span className="text-[11px] text-slate-500">
-                  Open receipt dialog immediately upon ticket submission at the counter POS
+                <label className="font-bold text-slate-700 block mb-1">
+                  Owner Password / PIN
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <Lock size={15} />
+                  </div>
+                  <input
+                    type={showOwnerPassword ? "text" : "password"}
+                    required
+                    value={ownerPassword}
+                    onChange={(e) => setOwnerPassword(e.target.value)}
+                    placeholder="e.g. 8888 or custom password"
+                    className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-300 font-mono font-bold text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowOwnerPassword(!showOwnerPassword)}
+                    className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-700 cursor-pointer"
+                  >
+                    {showOwnerPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                </div>
+                <span className="text-[10px] text-slate-400 mt-1 block">
+                  Used for Owner login. Default is 8888.
                 </span>
               </div>
-              <input
-                type="checkbox"
-                checked={autoPrintStub}
-                onChange={(e) => setAutoPrintStub(e.target.checked)}
-                className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-              />
             </div>
           </div>
-        </div>
 
-        {/* 3. Staff Accounts */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-            <Users size={18} className="text-slate-700" />
-            <h2 className="font-extrabold text-sm text-slate-900">Staff Accounts & Permissions</h2>
+          {/* Submit Button */}
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-6 py-3 rounded-xl transition-all shadow-md flex items-center gap-2 active:scale-95 cursor-pointer"
+            >
+              <Save size={15} />
+              <span>Save Shop Profile & Credentials</span>
+            </button>
           </div>
+        </form>
+      )}
 
-          <div className="space-y-2 text-xs">
-            <div className="p-3 rounded-xl border border-slate-200 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-800 font-bold flex items-center justify-center">
-                  ED
-                </div>
-                <div>
-                  <span className="font-bold text-slate-900 block">Eduardo Dela Cruz</span>
-                  <span className="text-[11px] text-slate-500">Role: Shop Owner / Boss (Full Access)</span>
-                </div>
-              </div>
-              <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-bold text-[10px] border border-indigo-200">
-                ACTIVE
-              </span>
-            </div>
-
-            <div className="p-3 rounded-xl border border-slate-200 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center">
-                  AS
-                </div>
-                <div>
-                  <span className="font-bold text-slate-900 block">Arlene Santos</span>
-                  <span className="text-[11px] text-slate-500">Role: Head Staff / Shift Operator</span>
-                </div>
-              </div>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold text-[10px] border border-emerald-200">
-                ON SHIFT
-              </span>
-            </div>
-
-            <div className="p-3 rounded-xl border border-slate-200 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 font-bold flex items-center justify-center">
-                  JR
-                </div>
-                <div>
-                  <span className="font-bold text-slate-900 block">John Reyes</span>
-                  <span className="text-[11px] text-slate-500">Role: Counter Cashier & Intake</span>
-                </div>
-              </div>
-              <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold text-[10px] border border-slate-200">
-                OFF SHIFT
-              </span>
-            </div>
-          </div>
+      {/* Tab 2: Services & Pricing */}
+      {activeSettingsTab === 'services' && (
+        <div className="pt-1">
+          <ServicesManagement />
         </div>
+      )}
 
-        {/* Submit */}
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-6 py-3 rounded-xl transition-all shadow-md flex items-center gap-2 active:scale-95"
-          >
-            <Save size={15} />
-            <span>Save All Shop Settings</span>
-          </button>
+      {/* Tab 3: Admin Users */}
+      {activeSettingsTab === 'staff' && (
+        <div className="pt-1">
+          <StaffManagement />
         </div>
+      )}
 
-      </form>
     </div>
   );
 };
+
