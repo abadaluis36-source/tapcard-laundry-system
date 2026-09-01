@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLaundry } from '../../context/LaundryContext';
-import { AdminTab, OwnerTab } from '../../types';
+import { AdminTab, OwnerTab, ExpenseSubmission } from '../../types';
 import { 
   LayoutDashboard, 
   Ticket as TicketIcon, 
@@ -31,11 +31,14 @@ export const Sidebar: React.FC = () => {
     pendingOrdersCount,
     lowStockItemsCount,
     tickets,
+    expenseSubmissions,
     currentUser,
     logout,
     setIsAuthModalOpen,
     setAuthModalTargetRole
   } = useLaundry();
+
+  const pendingAuditsCount = Object.values(expenseSubmissions || {}).filter((s: ExpenseSubmission) => s.status === 'PENDING_REVIEW').length;
 
   // Admin / Staff navigation items (Focused on Counter POS & Shift Operations)
   const adminNavItems = [
@@ -55,7 +58,7 @@ export const Sidebar: React.FC = () => {
     { id: 'customers' as OwnerTab, label: 'Customer Retention', icon: Users },
     { id: 'services' as OwnerTab, label: 'Services & Pricing', icon: Tag },
     { id: 'revenue' as OwnerTab, label: 'Revenue & Ledger', icon: DollarSign },
-    { id: 'expenses' as OwnerTab, label: 'Expense Tracker', icon: Receipt },
+    { id: 'expenses' as OwnerTab, label: 'Expense Tracker', icon: Receipt, badge: pendingAuditsCount > 0 ? pendingAuditsCount : undefined },
     { id: 'analytics' as OwnerTab, label: 'Business Analytics', icon: BarChart3 },
     { id: 'reports' as OwnerTab, label: 'Financial Reports', icon: FileText },
     { id: 'settings' as OwnerTab, label: 'Business Settings', icon: SettingsIcon },

@@ -63,18 +63,8 @@ export const MobileNav: React.FC = () => {
               {role === 'ADMIN' ? (
                 <>
                   <button
-                    onClick={() => { setAdminTab('expenses'); setIsMoreMenuOpen(false); }}
-                    className={`flex items-center gap-2 p-3 rounded-xl border text-left ${
-                      adminTab === 'expenses' ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-700 border-slate-200'
-                    }`}
-                  >
-                    <Receipt size={16} className="text-rose-500" />
-                    <span>Expense Tracker</span>
-                  </button>
-
-                  <button
                     onClick={() => { setAdminTab('reports'); setIsMoreMenuOpen(false); }}
-                    className={`flex items-center gap-2 p-3 rounded-xl border text-left ${
+                    className={`flex items-center gap-2 p-3 rounded-xl border text-left col-span-2 ${
                       adminTab === 'reports' ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-700 border-slate-200'
                     }`}
                   >
@@ -159,19 +149,14 @@ export const MobileNav: React.FC = () => {
             </button>
 
             <button
-              id="mobile-nav-admin-tickets"
-              onClick={() => setAdminTab('tickets')}
-              className={`flex flex-col items-center gap-0.5 py-1 px-1.5 sm:px-3 rounded-xl relative transition-colors ${
-                adminTab === 'tickets' ? 'text-emerald-600 font-bold' : 'text-slate-500'
+              id="mobile-nav-admin-payments"
+              onClick={() => setAdminTab('payments')}
+              className={`flex flex-col items-center gap-0.5 py-1 px-1.5 sm:px-3 rounded-xl transition-colors ${
+                adminTab === 'payments' ? 'text-emerald-600 font-bold' : 'text-slate-500'
               }`}
             >
-              <TicketIcon size={18} />
-              <span className="text-[10px]">Tickets</span>
-              {pendingOrdersCount > 0 && (
-                <span className="absolute top-0 right-1 sm:right-2 w-4 h-4 bg-emerald-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                  {pendingOrdersCount}
-                </span>
-              )}
+              <DollarSign size={18} />
+              <span className="text-[10px]">Payments</span>
             </button>
 
             {/* Elevated POS Button in Center */}
@@ -187,14 +172,14 @@ export const MobileNav: React.FC = () => {
             </button>
 
             <button
-              id="mobile-nav-admin-payments"
-              onClick={() => setAdminTab('payments')}
+              id="mobile-nav-admin-expenses"
+              onClick={() => setAdminTab('expenses')}
               className={`flex flex-col items-center gap-0.5 py-1 px-1.5 sm:px-3 rounded-xl transition-colors ${
-                adminTab === 'payments' ? 'text-emerald-600 font-bold' : 'text-slate-500'
+                adminTab === 'expenses' ? 'text-emerald-600 font-bold' : 'text-slate-500'
               }`}
             >
-              <DollarSign size={18} />
-              <span className="text-[10px]">Payments</span>
+              <Receipt size={18} />
+              <span className="text-[10px]">Expenses</span>
             </button>
 
             <button

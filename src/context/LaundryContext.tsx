@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   Customer, 
-  Expense, 
+  Expense,
+  ExpenseSubmission, 
   InventoryItem,
   LaundryStatus, 
   PaymentMethod, 
@@ -48,6 +49,7 @@ interface LaundryContextType {
   customers: Customer[];
   services: ServicePricing[];
   expenses: Expense[];
+  expenseSubmissions: Record<string, ExpenseSubmission>;
   inventory: InventoryItem[];
   payments: PaymentTransaction[];
   toasts: ToastNotification[];
@@ -77,6 +79,9 @@ interface LaundryContextType {
   addCustomer: (customerData: Omit<Customer, 'id' | 'totalOrders' | 'totalSpent' | 'lastOrderDate' | 'activeTicketCount'>) => Customer;
   addExpense: (expenseData: Omit<Expense, 'id'>) => void;
   deleteExpense: (id: string) => void;
+  sendExpenseReportToBoss: (date: string, senderName?: string) => void;
+  reviewExpenseReport: (date: string, status: 'APPROVED' | 'PENDING_REVIEW', note?: string) => void;
+  deleteExpenseReport: (date: string) => void;
   addInventoryItem: (itemData: Omit<InventoryItem, 'id' | 'status'>) => void;
   updateInventoryItem: (id: string, updatedData: Partial<InventoryItem>) => void;
   deleteInventoryItem: (id: string) => void;
@@ -124,9 +129,37 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [customers, setCustomers] = useState<Customer[]>(INITIAL_CUSTOMERS);
   const [services, setServices] = useState<ServicePricing[]>(INITIAL_SERVICES);
   const [expenses, setExpenses] = useState<Expense[]>(INITIAL_EXPENSES);
+  const [expenseSubmissions, setExpenseSubmissions] = useState<Record<string, ExpenseSubmission>>(() => {
+    try {
+      const saved = localStorage.getItem('tapcard_expense_submissions');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // fallback
+    }
+    return {
+      '2026-08-31': {
+        date: '2026-08-31',
+        sentAt: '2026-08-31 06:15 PM',
+        sentBy: 'Arlene Santos',
+        totalAmount: 2050,
+        totalPieces: 6,
+        itemCount: 2,
+        status: 'PENDING_REVIEW'
+      }
+    };
+  });
   const [inventory, setInventory] = useState<InventoryItem[]>(INITIAL_INVENTORY);
   const [payments, setPayments] = useState<PaymentTransaction[]>(INITIAL_PAYMENTS);
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
+  
+  // Save expense submissions in localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('tapcard_expense_submissions', JSON.stringify(expenseSubmissions));
+    } catch {
+      // ignore
+    }
+  }, [expenseSubmissions]);
   
   // Save user in localStorage
   useEffect(() => {
@@ -390,6 +423,88 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     addToast('Expense Deleted', 'Expense item removed from ledger.', 'info');
   };
 
+  const sendExpenseReportToBoss = (date: string, senderName?: string) => {
+    const matchingExpenses = expenses.filter(e => e.date === date);
+    const totalAmount = matchingExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const totalPieces = matchingExpenses.reduce((sum, e) => sum + (e.pieces !== undefined ? Number(e.pieces) || 1 : 1), 0);
+    const userDisplayName = senderName || currentUser?.name || 'Staff On Duty';
+    const nowStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    
+    const submission: ExpenseSubmission = {
+      date,
+      sentAt: `${date} ${nowStr}`,
+      sentBy: userDisplayName,
+      totalAmount,
+      totalPieces,
+      itemCount: matchingExpenses.length,
+      status: 'PENDING_REVIEW'
+    };
+
+    setExpenseSubmissions(prev => ({
+      ...prev,
+      [date]: submission
+    }));
+
+    addToast(
+      'Expense Sent to Boss',
+      `Expense table for ${date} (₱${totalAmount.toLocaleString()}) has been sent to the Boss UI.`,
+      'success'
+    );
+  };
+
+  const reviewExpenseReport = (date: string, status: 'APPROVED' | 'PENDING_REVIEW', note?: string) => {
+    setExpenseSubmissions(prev => {
+      const existing = prev[date];
+      if (!existing) {
+        const matchingExpenses = expenses.filter(e => e.date === date);
+        const totalAmount = matchingExpenses.reduce((sum, e) => sum + e.amount, 0);
+        const totalPieces = matchingExpenses.reduce((sum, e) => sum + (e.pieces !== undefined ? Number(e.pieces) || 1 : 1), 0);
+        const nowStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+        return {
+          ...prev,
+          [date]: {
+            date,
+            sentAt: `${date} 09:00 AM`,
+            sentBy: 'Staff On Duty',
+            totalAmount,
+            totalPieces,
+            itemCount: matchingExpenses.length,
+            status,
+            reviewedAt: `${new Date().toISOString().split('T')[0]} ${nowStr}`,
+            reviewedBy: currentUser?.name || 'Boss Dennis',
+            bossNote: note
+          }
+        };
+      }
+      const nowStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+      return {
+        ...prev,
+        [date]: {
+          ...existing,
+          status,
+          reviewedAt: `${new Date().toISOString().split('T')[0]} ${nowStr}`,
+          reviewedBy: currentUser?.name || 'Boss Dennis',
+          bossNote: note
+        }
+      };
+    });
+
+    addToast(
+      status === 'APPROVED' ? 'Report Acknowledged' : 'Report Updated',
+      `Expense table for ${date} marked as ${status === 'APPROVED' ? 'Approved & Audited' : 'Pending Review'}.`,
+      'success'
+    );
+  };
+
+  const deleteExpenseReport = (date: string) => {
+    setExpenseSubmissions(prev => {
+      const copy = { ...prev };
+      delete copy[date];
+      return copy;
+    });
+    addToast('Report Removed', `Expense report archive for ${date} deleted.`, 'info');
+  };
+
   const addInventoryItem = (itemData: Omit<InventoryItem, 'id' | 'status'>) => {
     const status: InventoryItem['status'] = 
       itemData.currentStock <= 0 ? 'Out of Stock' :
@@ -613,6 +728,7 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         customers,
         services,
         expenses,
+        expenseSubmissions,
         inventory,
         payments,
         toasts,
@@ -636,6 +752,9 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         addCustomer,
         addExpense,
         deleteExpense,
+        sendExpenseReportToBoss,
+        reviewExpenseReport,
+        deleteExpenseReport,
         addInventoryItem,
         updateInventoryItem,
         deleteInventoryItem,

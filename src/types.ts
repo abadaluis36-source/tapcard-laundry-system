@@ -99,6 +99,19 @@ export interface Expense {
   pieces?: number;
 }
 
+export interface ExpenseSubmission {
+  date: string;
+  sentAt: string;
+  sentBy: string;
+  totalAmount: number;
+  totalPieces: number;
+  itemCount: number;
+  status: 'PENDING_REVIEW' | 'APPROVED';
+  reviewedAt?: string;
+  reviewedBy?: string;
+  bossNote?: string;
+}
+
 export interface InventoryItem {
   id: string;
   name: string;

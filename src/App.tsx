@@ -23,6 +23,7 @@ import { ExpensesManagement } from './components/admin/ExpensesManagement';
 // Owner Components
 import { OwnerDashboard } from './components/owner/OwnerDashboard';
 import { ReportsView } from './components/owner/ReportsView';
+import { OwnerExpensesTracker } from './components/owner/OwnerExpensesTracker';
 
 // Settings Component
 import { SettingsView } from './components/settings/SettingsView';
@@ -64,7 +65,7 @@ const AppContent: React.FC = () => {
         case 'revenue':
           return <PaymentsLedger />;
         case 'expenses':
-          return <ExpensesManagement />;
+          return <OwnerExpensesTracker />;
         case 'analytics':
           return <OwnerDashboard />;
         case 'reports':
