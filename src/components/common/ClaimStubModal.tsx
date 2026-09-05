@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 
 export const ClaimStubModal: React.FC = () => {
-  const { activeClaimStubTicket, setActiveClaimStubTicket } = useLaundry();
+  const { activeClaimStubTicket, setActiveClaimStubTicket, storeProfile } = useLaundry();
   const [copied, setCopied] = useState(false);
 
   if (!activeClaimStubTicket) return null;
@@ -126,8 +126,8 @@ export const ClaimStubModal: React.FC = () => {
 
           {/* Shop Notes */}
           <div className="text-[11px] text-slate-500 text-center space-y-0.5">
-            <p className="font-medium text-slate-700">TAPCARD LAUNDRY SHOP</p>
-            <p>0917-555-8921 · Open Daily 7:00 AM - 9:00 PM</p>
+            <p className="font-medium text-slate-700">{storeProfile.shopName}</p>
+            <p>{storeProfile.phone} · Open {storeProfile.operatingHours}</p>
           </div>
         </div>
 

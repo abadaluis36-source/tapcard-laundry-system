@@ -30,8 +30,8 @@ export const StaffManagement: React.FC = () => {
     addToast 
   } = useLaundry();
 
-  // Filter only Admin / Staff accounts
-  const adminUsers = authUsers.filter(u => u.role === 'ADMIN');
+  // Filter Admin and Owner accounts
+  const adminUsers = authUsers.filter(u => u.role === 'ADMIN' || u.role === 'OWNER');
 
   // Modal / Form state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -254,6 +254,11 @@ export const StaffManagement: React.FC = () => {
                       <h3 className="font-extrabold text-sm text-slate-900 leading-tight truncate">
                         {user.name}
                       </h3>
+                      {user.role === 'OWNER' && (
+                        <span className="px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-extrabold text-[9px] border border-indigo-200 shrink-0">
+                          OWNER
+                        </span>
+                      )}
                       {isCurrentUser && (
                         <span className="px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-extrabold text-[9px] border border-emerald-200 shrink-0">
                           YOU

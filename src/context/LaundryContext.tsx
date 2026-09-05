@@ -53,9 +53,12 @@ interface LaundryContextType {
   services: ServicePricing[];
   expenses: Expense[];
   expenseSubmissions: Record<string, ExpenseSubmission>;
+  revenueSubmissions: Record<string, ExpenseSubmission>;
   inventory: InventoryItem[];
   payments: PaymentTransaction[];
   toasts: ToastNotification[];
+  storeProfile: StoreProfile;
+  updateStoreProfile: (updatedData: Partial<StoreProfile>) => void;
   
   // Customer portal state
   customerSearchQuery: string;
@@ -86,6 +89,7 @@ interface LaundryContextType {
   addMultipleExpenses: (expensesData: Omit<Expense, 'id'>[]) => void;
   deleteExpense: (id: string) => void;
   sendExpenseReportToBoss: (date: string, senderName?: string) => void;
+  sendRevenueReportToBoss: (date: string, totalAmount: number, itemCount: number, senderName?: string) => void;
   reviewExpenseReport: (date: string, status: 'APPROVED' | 'PENDING_REVIEW', note?: string) => void;
   deleteExpenseReport: (date: string) => void;
   addInventoryItem: (itemData: Omit<InventoryItem, 'id' | 'status'>) => void;
@@ -147,68 +151,54 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [authModalTargetRole, setAuthModalTargetRole] = useState<'ADMIN' | 'OWNER'>('ADMIN');
   
-  // Clean old cached mock data once for a fresh clean test environment
-  const isFreshClean = (() => {
-    try {
-      return localStorage.getItem('tapcard_fresh_clean_v2') === 'true';
-    } catch {
-      return false;
-    }
-  })();
-
+  // Force clean zero data environment on initial mount
   const [tickets, setTickets] = useState<Ticket[]>(() => {
-    if (!isFreshClean) return [];
     try {
-      const saved = localStorage.getItem('tapcard_tickets');
-      if (saved) return JSON.parse(saved);
-    } catch {
-      // fallback
-    }
-    return INITIAL_TICKETS;
+      localStorage.removeItem('tapcard_tickets');
+      localStorage.removeItem('tapcard_customers');
+      localStorage.removeItem('tapcard_expenses');
+      localStorage.removeItem('tapcard_expense_submissions');
+      localStorage.removeItem('tapcard_revenue_submissions');
+      localStorage.removeItem('tapcard_payments');
+    } catch {}
+    return [];
   });
-  const [customers, setCustomers] = useState<Customer[]>(() => {
-    if (!isFreshClean) return [];
-    try {
-      const saved = localStorage.getItem('tapcard_customers');
-      if (saved) return JSON.parse(saved);
-    } catch {
-      // fallback
-    }
-    return INITIAL_CUSTOMERS;
-  });
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [services, setServices] = useState<ServicePricing[]>(INITIAL_SERVICES);
-  const [expenses, setExpenses] = useState<Expense[]>(() => {
-    if (!isFreshClean) return [];
-    try {
-      const saved = localStorage.getItem('tapcard_expenses');
-      if (saved) return JSON.parse(saved);
-    } catch {
-      // fallback
-    }
-    return INITIAL_EXPENSES;
-  });
-  const [expenseSubmissions, setExpenseSubmissions] = useState<Record<string, ExpenseSubmission>>(() => {
-    if (!isFreshClean) return {};
-    try {
-      const saved = localStorage.getItem('tapcard_expense_submissions');
-      if (saved) return JSON.parse(saved);
-    } catch {
-      // fallback
-    }
-    return {};
-  });
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [expenseSubmissions, setExpenseSubmissions] = useState<Record<string, ExpenseSubmission>>({});
+  const [revenueSubmissions, setRevenueSubmissions] = useState<Record<string, ExpenseSubmission>>({});
   const [inventory, setInventory] = useState<InventoryItem[]>(INITIAL_INVENTORY);
-  const [payments, setPayments] = useState<PaymentTransaction[]>(() => {
-    if (!isFreshClean) return [];
+  const [payments, setPayments] = useState<PaymentTransaction[]>([]);
+  const [toasts, setToasts] = useState<ToastNotification[]>([]);
+  const [storeProfile, setStoreProfile] = useState<StoreProfile>(() => {
     try {
-      const saved = localStorage.getItem('tapcard_payments');
+      const saved = localStorage.getItem('tapcard_store_profile');
       if (saved) return JSON.parse(saved);
     } catch {
       // fallback
     }
-    return INITIAL_PAYMENTS;
+    return {
+      shopName: 'TAPCARD LAUNDRY SHOP',
+      tagline: 'Professional Wash, Dry & Fold Services',
+      phone: '0917 555 8921',
+      address: 'Bonifacio Global City, Taguig City',
+      operatingHours: '7:00 AM - 9:00 PM Daily',
+      ownerName: 'Maria Santos',
+    };
   });
-  const [toasts, setToasts] = useState<ToastNotification[]>([]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tapcard_store_profile', JSON.stringify(storeProfile));
+    } catch {
+      // ignore
+    }
+  }, [storeProfile]);
+
+  const updateStoreProfile = (updatedData: Partial<StoreProfile>) => {
+    setStoreProfile(prev => ({ ...prev, ...updatedData }));
+  };
 
   // Guarantee clean storage on initial mount
   useEffect(() => {
@@ -270,6 +260,15 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       // ignore
     }
   }, [expenseSubmissions]);
+
+  // Save revenue submissions in localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('tapcard_revenue_submissions', JSON.stringify(revenueSubmissions));
+    } catch {
+      // ignore
+    }
+  }, [revenueSubmissions]);
   
   // Save auth users in localStorage
   useEffect(() => {
@@ -365,7 +364,7 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     // Record payment if paid
     if (newTicket.amountPaid > 0) {
       const newPayment: PaymentTransaction = {
-        id: `pay-${Date.now()}`,
+        id: `pay-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         date: timeString,
         ticketId: newId,
         ticketNumber: newTicket.ticketNumber,
@@ -375,7 +374,10 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         paymentMethod: newTicket.paymentMethod,
         notes: `Initial counter payment for ticket ${newTicket.ticketNumber}`
       };
-      setPayments((prev) => [newPayment, ...prev]);
+      setPayments((prev) => {
+        if (prev.some(p => p.ticketId === newId)) return prev;
+        return [newPayment, ...prev];
+      });
     }
 
     // Update customer stats or add if new
@@ -426,7 +428,7 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return `${year}-${month}-${day} ${strHours}:${minutes} ${ampm}`;
   };
 
-  const updateTicketStatus = (ticketId: string, newStatus: LaundryStatus, note?: string) => {
+  const updateTicketStatus = (ticketId: string, newStatus: LaundryStatus, note?: string, suppressToast = false) => {
     const timeString = getFormattedDateTime();
 
     let updatedTicketNumber = '';
@@ -518,36 +520,25 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       };
     });
 
-    const readableStatus = newStatus === 'READY' ? 'READY FOR PICKUP' : newStatus;
-    addToast(
-      `✓ Ticket ${updatedTicketNumber || ticketId} updated to ${readableStatus}`,
-      customerName ? `Customer ${customerName}'s order is now marked as ${readableStatus}. Live tracking updated.` : `Order status updated to ${readableStatus}.`,
-      newStatus === 'READY' ? 'info' : 'success'
-    );
+    if (!suppressToast) {
+      const readableStatus = newStatus === 'READY' ? 'READY FOR PICKUP' : newStatus;
+      addToast(
+        `✓ Ticket ${updatedTicketNumber || ticketId} updated to ${readableStatus}`,
+        customerName ? `Customer ${customerName}'s order is now marked as ${readableStatus}. Live tracking updated.` : `Order status updated to ${readableStatus}.`,
+        newStatus === 'READY' ? 'info' : 'success'
+      );
+    }
   };
 
-  const updateTicketPayment = (ticketId: string, paymentStatus: PaymentStatus, amountPaid: number, method: PaymentMethod) => {
+  const updateTicketPayment = (ticketId: string, paymentStatus: PaymentStatus, amountPaid: number, method: PaymentMethod, suppressToast = false) => {
     const timeString = getFormattedDateTime();
 
+    // 1. Purely update ticket state without side effects
+    let targetTicket: Ticket | undefined;
     setTickets((prev) =>
       prev.map((tkt) => {
         if (tkt.id === ticketId) {
-          const additional = amountPaid - tkt.amountPaid;
-          if (additional > 0) {
-            const newPayment: PaymentTransaction = {
-              id: `pay-${Date.now()}`,
-              date: timeString,
-              ticketId: tkt.id,
-              ticketNumber: tkt.ticketNumber,
-              customerName: tkt.customerName,
-              amount: additional,
-              paymentStatus: paymentStatus,
-              paymentMethod: method,
-              notes: `Payment collected (Status: ${paymentStatus})`
-            };
-            setPayments((p) => [newPayment, ...p]);
-          }
-
+          targetTicket = tkt;
           return {
             ...tkt,
             paymentStatus,
@@ -558,6 +549,47 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return tkt;
       })
     );
+
+    // 2. Purely and safely record payment transaction OUTSIDE setTickets with strict duplicate protection
+    setPayments((prevPayments) => {
+      // Calculate how much payment has already been logged for this ticket
+      const existingRecordedAmount = prevPayments
+        .filter((p) => p.ticketId === ticketId)
+        .reduce((sum, p) => sum + p.amount, 0);
+
+      // Only record the difference if amountPaid is greater than what is already recorded
+      const additional = amountPaid - existingRecordedAmount;
+      if (additional <= 0) {
+        return prevPayments;
+      }
+
+      // Check if an identical transaction was already logged to prevent double-processing
+      const alreadyLogged = prevPayments.some((p) => 
+        p.ticketId === ticketId && 
+        p.amount === additional && 
+        p.paymentMethod === method &&
+        p.date === timeString
+      );
+      if (alreadyLogged) {
+        return prevPayments;
+      }
+
+      const ticketSnapshot = targetTicket || tickets.find((t) => t.id === ticketId);
+
+      const newPayment: PaymentTransaction = {
+        id: `pay-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        date: timeString,
+        ticketId: ticketId,
+        ticketNumber: ticketSnapshot?.ticketNumber || '',
+        customerName: ticketSnapshot?.customerName || '',
+        amount: additional,
+        paymentStatus: paymentStatus,
+        paymentMethod: method,
+        notes: `Payment collected (Status: ${paymentStatus})`
+      };
+
+      return [newPayment, ...prevPayments];
+    });
 
     setActiveDetailTicket((prev) => {
       if (!prev || prev.id !== ticketId) return prev;
@@ -589,7 +621,9 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       };
     });
 
-    addToast('Payment Recorded', `Payment status updated to ${paymentStatus}.`, 'success');
+    if (!suppressToast) {
+      addToast('Payment Recorded', `Payment status updated to ${paymentStatus}.`, 'success');
+    }
   };
 
   const addCustomer = (customerData: Omit<Customer, 'id' | 'totalOrders' | 'totalSpent' | 'lastOrderDate' | 'activeTicketCount'>): Customer => {
@@ -657,6 +691,32 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     addToast(
       'Expense Sent to Boss',
       `Expense table for ${date} (₱${totalAmount.toLocaleString()}) has been sent to the Boss UI.`,
+      'success'
+    );
+  };
+
+  const sendRevenueReportToBoss = (date: string, totalAmount: number, itemCount: number, senderName?: string) => {
+    const userDisplayName = senderName || currentUser?.name || 'Staff On Duty';
+    const nowStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    
+    const submission: ExpenseSubmission = {
+      date,
+      sentAt: `${date} ${nowStr}`,
+      sentBy: userDisplayName,
+      totalAmount,
+      totalPieces: 0, // Not strictly applicable for revenue but required by interface
+      itemCount,
+      status: 'PENDING_REVIEW'
+    };
+
+    setRevenueSubmissions(prev => ({
+      ...prev,
+      [date]: submission
+    }));
+
+    addToast(
+      'Revenue Sent to Boss',
+      `Revenue table for ${date} (₱${totalAmount.toLocaleString()}) has been sent to the Boss UI.`,
       'success'
     );
   };
@@ -979,8 +1039,11 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [payments]);
 
   const monthlyRevenue = React.useMemo(() => {
-    return todayRevenue + 176850; // Historical base + real live payments
-  }, [todayRevenue]);
+    const currentMonthPrefix = new Date().toISOString().substring(0, 7);
+    return payments
+      .filter(p => (p.date || '').substring(0, 7) === currentMonthPrefix)
+      .reduce((sum, p) => sum + (p.paymentStatus === 'PAID' ? p.amount : 0), 0);
+  }, [payments]);
 
   const todayOrdersCount = tickets.length;
   const pendingOrdersCount = tickets.filter(t => t.status !== 'COMPLETED' && t.status !== 'CANCELLED').length;
@@ -990,7 +1053,12 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return expenses.reduce((sum, e) => sum + e.amount, 0);
   }, [expenses]);
 
-  const monthlyExpensesTotal = todayExpensesTotal + 40150;
+  const monthlyExpensesTotal = React.useMemo(() => {
+    const currentMonthPrefix = new Date().toISOString().substring(0, 7);
+    return expenses
+      .filter(e => (e.date || '').substring(0, 7) === currentMonthPrefix)
+      .reduce((sum, e) => sum + e.amount, 0);
+  }, [expenses]);
   const lowStockItemsCount = inventory.filter(i => i.status === 'Low Stock' || i.status === 'Out of Stock').length;
 
   return (
@@ -1019,6 +1087,7 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         services,
         expenses,
         expenseSubmissions,
+        revenueSubmissions,
         inventory,
         payments,
         toasts,
@@ -1046,6 +1115,7 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         addMultipleExpenses,
         deleteExpense,
         sendExpenseReportToBoss,
+        sendRevenueReportToBoss,
         reviewExpenseReport,
         deleteExpenseReport,
         addInventoryItem,
@@ -1063,7 +1133,9 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         completedOrdersCount,
         todayExpensesTotal,
         monthlyExpensesTotal,
-        lowStockItemsCount
+        lowStockItemsCount,
+        storeProfile,
+        updateStoreProfile
       }}
     >
       {children}

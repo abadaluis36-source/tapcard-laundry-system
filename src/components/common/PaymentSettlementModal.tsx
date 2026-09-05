@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   Banknote, 
@@ -21,6 +21,13 @@ export const PaymentSettlementModal: React.FC = () => {
 
   const ticket = activeSettlementTicket;
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('CASH');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (activeSettlementTicket) {
+      setIsSubmitting(false);
+    }
+  }, [activeSettlementTicket]);
 
   if (!ticket) return null;
 
@@ -29,24 +36,29 @@ export const PaymentSettlementModal: React.FC = () => {
   const remainingBalance = Math.max(0, totalAmount - amountPaidSoFar);
 
   const handleClose = () => {
+    if (isSubmitting) return;
     setActiveSettlementTicket(null);
   };
 
   // Settle Payment with chosen method (Cash / GCash) and mark Completed
   const handleSettleAndComplete = (method: PaymentMethod) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
     // 1. Settle in full with chosen method
-    updateTicketPayment(ticket.id, 'PAID', totalAmount, method);
+    updateTicketPayment(ticket.id, 'PAID', totalAmount, method, true);
 
     // 2. Mark order completed
     updateTicketStatus(
       ticket.id, 
       'COMPLETED', 
-      `Completed & Paid in full (₱${totalAmount.toLocaleString()}) via ${method === 'GCASH' ? 'GCash' : 'Cash'}`
+      `Completed & Paid in full (₱${totalAmount.toLocaleString()}) via ${method === 'GCASH' ? 'GCash' : 'Cash'}`,
+      true
     );
 
     addToast(
-      `✓ Ticket ${ticket.ticketNumber} Completed`,
-      `Paid ₱${remainingBalance.toLocaleString()} via ${method === 'GCASH' ? 'GCash' : 'Cash'}. Logged into Payments table.`,
+      `Ticket Completed`,
+      `Ticket ${ticket.ticketNumber} paid ₱${remainingBalance.toLocaleString()} via ${method === 'GCASH' ? 'GCash' : 'Cash'}.`,
       'success'
     );
 
@@ -55,15 +67,19 @@ export const PaymentSettlementModal: React.FC = () => {
 
   // Option to keep unpaid if customer is picking up on credit
   const handleKeepUnpaidAndComplete = () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
     updateTicketStatus(
       ticket.id, 
       'COMPLETED', 
-      `Order marked completed. Balance of ₱${remainingBalance.toLocaleString()} left as ${ticket.paymentStatus}.`
+      `Order marked completed. Balance of ₱${remainingBalance.toLocaleString()} left as ${ticket.paymentStatus}.`,
+      true
     );
 
     addToast(
-      `Ticket ${ticket.ticketNumber} Completed`,
-      `Marked completed. Balance ₱${remainingBalance.toLocaleString()} recorded in receivables.`,
+      `Ticket Completed (Unpaid)`,
+      `Ticket ${ticket.ticketNumber} completed with ₱${remainingBalance.toLocaleString()} balance.`,
       'warning'
     );
 
@@ -124,8 +140,11 @@ export const PaymentSettlementModal: React.FC = () => {
             <button
               type="button"
               id="pay-cash-btn"
+              disabled={isSubmitting}
               onClick={() => handleSettleAndComplete('CASH')}
-              className="p-3.5 rounded-xl border-2 border-emerald-600 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs group"
+              className={`p-3.5 rounded-xl border-2 border-emerald-600 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 flex flex-col items-center justify-center gap-1.5 transition-all shadow-xs group ${
+                isSubmitting ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
+              }`}
             >
               <div className="w-9 h-9 rounded-full bg-emerald-600 text-white flex items-center justify-center group-hover:scale-105 transition-transform">
                 <Banknote size={20} />
@@ -138,8 +157,11 @@ export const PaymentSettlementModal: React.FC = () => {
             <button
               type="button"
               id="pay-gcash-btn"
+              disabled={isSubmitting}
               onClick={() => handleSettleAndComplete('GCASH')}
-              className="p-3.5 rounded-xl border-2 border-blue-600 bg-blue-50 hover:bg-blue-100 text-blue-950 flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs group"
+              className={`p-3.5 rounded-xl border-2 border-blue-600 bg-blue-50 hover:bg-blue-100 text-blue-950 flex flex-col items-center justify-center gap-1.5 transition-all shadow-xs group ${
+                isSubmitting ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
+              }`}
             >
               <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center group-hover:scale-105 transition-transform">
                 <Smartphone size={20} />

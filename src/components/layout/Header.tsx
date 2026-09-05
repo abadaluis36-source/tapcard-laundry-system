@@ -27,7 +27,8 @@ export const Header: React.FC = () => {
     currentUser,
     logout,
     setIsAuthModalOpen,
-    setAuthModalTargetRole
+    setAuthModalTargetRole,
+    storeProfile
   } = useLaundry();
 
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -91,7 +92,7 @@ export const Header: React.FC = () => {
 
               <div className="min-w-0">
                 <span className="font-extrabold text-xs sm:text-base md:text-lg text-slate-900 tracking-tight leading-none truncate block">
-                  TAPCARD LAUNDRY
+                  {storeProfile.shopName}
                 </span>
                 <span className="text-[10px] sm:text-[11px] font-medium text-slate-500 hidden sm:inline-block leading-tight">
                   Management & Tracking System
@@ -102,59 +103,11 @@ export const Header: React.FC = () => {
             {/* Branch pill on desktop only */}
             <div className="hidden md:flex items-center gap-1.5 ml-2 pl-3 border-l border-slate-200 text-xs text-slate-500">
               <Store size={13} className="text-slate-400" />
-              <span className="font-medium text-slate-700">Makati Central</span>
+              <span className="font-medium text-slate-700">Taguig</span>
             </div>
           </div>
 
-          {/* Desktop/Tablet Role Switcher (Hidden on small mobile to eliminate horizontal scrolling) */}
-          <div className="hidden md:flex items-center">
-            <div 
-              id="role-switcher-container"
-              className="bg-slate-100 p-1 rounded-xl border border-slate-200 flex items-center shadow-xs"
-            >
-              <button
-                id="role-switch-admin-btn"
-                onClick={() => handleRoleSelect('ADMIN')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  role === 'ADMIN'
-                    ? 'bg-white text-slate-900 shadow-xs font-extrabold'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-                }`}
-                title="Operational interface for staff counter POS"
-              >
-                <UserCheck size={14} className={role === 'ADMIN' ? 'text-emerald-600' : 'text-slate-400'} />
-                <span>Staff / Admin</span>
-              </button>
 
-              <button
-                id="role-switch-owner-btn"
-                onClick={() => handleRoleSelect('OWNER')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  role === 'OWNER'
-                    ? 'bg-white text-slate-900 shadow-xs font-extrabold'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-                }`}
-                title="Executive business overview & financial tracking"
-              >
-                <TrendingUp size={14} className={role === 'OWNER' ? 'text-indigo-600' : 'text-slate-400'} />
-                <span>Boss / Owner</span>
-              </button>
-
-              <button
-                id="role-switch-customer-btn"
-                onClick={() => handleRoleSelect('CUSTOMER')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  role === 'CUSTOMER'
-                    ? 'bg-emerald-600 text-white shadow-xs font-extrabold'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-                }`}
-                title="Mobile customer tracking screen"
-              >
-                <Smartphone size={14} className={role === 'CUSTOMER' ? 'text-white' : 'text-slate-400'} />
-                <span>Customer View</span>
-              </button>
-            </div>
-          </div>
 
           {/* Right Area: Profile / Account Button for All Screen Sizes */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
@@ -198,11 +151,11 @@ export const Header: React.FC = () => {
                       </div>
                     )}
                     <div className="hidden sm:block text-left leading-none">
-                      <span className="block text-xs font-bold text-slate-800 leading-tight truncate max-w-[90px]">
-                        {currentUser.name.split(' ')[0]}
+                      <span className="block text-xs font-bold text-slate-800 leading-tight truncate max-w-[110px]">
+                        {currentUser.role === 'OWNER' ? (storeProfile.ownerName || currentUser.name) : currentUser.name.split(' ')[0]}
                       </span>
                       <span className="text-[9px] text-slate-500 font-medium leading-none font-mono">
-                        {currentUser.role === 'OWNER' ? 'Boss' : 'Staff'}
+                        {currentUser.role === 'OWNER' ? 'Shop Owner' : 'Staff'}
                       </span>
                     </div>
                     <ChevronDown size={14} className={`text-slate-400 transition-transform ${isProfileMenuOpen ? 'rotate-180 text-slate-700' : ''}`} />
@@ -297,19 +250,6 @@ export const Header: React.FC = () => {
 
                       {/* Account Management & Log Out */}
                       <div className="p-1.5 space-y-0.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAuthModalTargetRole(currentUser.role);
-                            setIsAuthModalOpen(true);
-                            setIsProfileMenuOpen(false);
-                          }}
-                          className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-100 text-left transition-colors cursor-pointer"
-                        >
-                          <RefreshCw size={14} className="text-slate-400" />
-                          <span>Switch Account / Operator</span>
-                        </button>
-
                         <button
                           type="button"
                           onClick={() => {

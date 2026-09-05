@@ -15,15 +15,26 @@ import {
 } from 'lucide-react';
 
 export const SettingsView: React.FC = () => {
-  const { authUsers, updateStaff, addToast } = useLaundry();
+  const { authUsers, updateStaff, addToast, storeProfile, updateStoreProfile } = useLaundry();
   const [activeSettingsTab, setActiveSettingsTab] = useState<'profile' | 'services' | 'staff'>('profile');
 
   // Shop Profile state
-  const [shopName, setShopName] = useState('TAPCARD LAUNDRY SHOP');
-  const [tagline, setTagline] = useState('Professional Wash, Dry & Fold Services');
-  const [phone, setPhone] = useState('0917 555 8921');
-  const [address, setAddress] = useState('Unit 102 Greenwoods Arcade, Pasig City');
-  const [operatingHours, setOperatingHours] = useState('7:00 AM - 9:00 PM Daily');
+  const [shopName, setShopName] = useState(storeProfile.shopName);
+  const [ownerName, setOwnerName] = useState(storeProfile.ownerName || 'Maria Santos');
+  const [tagline, setTagline] = useState(storeProfile.tagline);
+  const [phone, setPhone] = useState(storeProfile.phone);
+  const [address, setAddress] = useState(storeProfile.address);
+  const [operatingHours, setOperatingHours] = useState(storeProfile.operatingHours);
+
+  // Sync if storeProfile changes externally
+  useEffect(() => {
+    setShopName(storeProfile.shopName);
+    setOwnerName(storeProfile.ownerName || 'Maria Santos');
+    setTagline(storeProfile.tagline);
+    setPhone(storeProfile.phone);
+    setAddress(storeProfile.address);
+    setOperatingHours(storeProfile.operatingHours);
+  }, [storeProfile]);
 
   // Owner Credentials state
   const ownerUser = authUsers.find(u => u.role === 'OWNER') || authUsers[0];
@@ -133,7 +144,23 @@ export const SettingsView: React.FC = () => {
                 <input
                   type="text"
                   value={shopName}
-                  onChange={(e) => setShopName(e.target.value)}
+                  onChange={(e) => {
+                    setShopName(e.target.value);
+                    updateStoreProfile({ shopName: e.target.value });
+                  }}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold text-slate-800"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Shop Owner Name</label>
+                <input
+                  type="text"
+                  value={ownerName}
+                  onChange={(e) => {
+                    setOwnerName(e.target.value);
+                    updateStoreProfile({ ownerName: e.target.value });
+                  }}
                   className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold text-slate-800"
                 />
               </div>
@@ -143,7 +170,10 @@ export const SettingsView: React.FC = () => {
                 <input
                   type="text"
                   value={tagline}
-                  onChange={(e) => setTagline(e.target.value)}
+                  onChange={(e) => {
+                    setTagline(e.target.value);
+                    updateStoreProfile({ tagline: e.target.value });
+                  }}
                   className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
@@ -153,7 +183,10 @@ export const SettingsView: React.FC = () => {
                 <input
                   type="text"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => {
+                    setPhone(e.target.value);
+                    updateStoreProfile({ phone: e.target.value });
+                  }}
                   className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
@@ -163,7 +196,10 @@ export const SettingsView: React.FC = () => {
                 <input
                   type="text"
                   value={operatingHours}
-                  onChange={(e) => setOperatingHours(e.target.value)}
+                  onChange={(e) => {
+                    setOperatingHours(e.target.value);
+                    updateStoreProfile({ operatingHours: e.target.value });
+                  }}
                   className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
@@ -173,7 +209,10 @@ export const SettingsView: React.FC = () => {
                 <input
                   type="text"
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
+                  onChange={(e) => {
+                    setAddress(e.target.value);
+                    updateStoreProfile({ address: e.target.value });
+                  }}
                   className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>

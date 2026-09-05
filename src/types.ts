@@ -182,3 +182,13 @@ export interface ToastNotification {
   type: 'success' | 'info' | 'warning' | 'error';
   timestamp: string;
 }
+
+export interface StoreProfile {
+  shopName: string;
+  tagline: string;
+  phone: string;
+  address: string;
+  operatingHours: string;
+  ownerName: string;
+}
+

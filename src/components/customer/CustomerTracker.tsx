@@ -25,7 +25,8 @@ export const CustomerTracker: React.FC = () => {
     setCustomerSearchQuery,
     selectedCustomerTicket,
     setSelectedCustomerTicket,
-    setActiveClaimStubTicket
+    setActiveClaimStubTicket,
+    storeProfile
   } = useLaundry();
 
   const [inputVal, setInputVal] = useState(customerSearchQuery || '');
@@ -134,32 +135,32 @@ export const CustomerTracker: React.FC = () => {
     return (
       <div 
         id="customer-entry-screen"
-        className="min-h-[calc(100vh-4.5rem)] bg-slate-50 flex flex-col items-center justify-center px-4 py-8 sm:py-12"
+        className="min-h-[calc(100vh-4.5rem)] bg-gradient-to-br from-slate-50 via-emerald-50/20 to-slate-100 flex flex-col items-center justify-center px-4 py-8 sm:py-12 select-none"
       >
         <div className="w-full max-w-sm space-y-6">
           
-          {/* 1. TAPCARD LAUNDRY SHOP Branding */}
+          {/* 1. Laundry Branding Header */}
           <div className="text-center space-y-3">
-            <div className="w-16 h-16 bg-emerald-600 text-white rounded-2xl mx-auto flex items-center justify-center font-black text-2xl shadow-md shadow-emerald-600/20 ring-4 ring-emerald-100">
-              ₱
+            <div className="w-16 h-16 bg-gradient-to-tr from-emerald-600 to-teal-500 text-white rounded-3xl mx-auto flex items-center justify-center shadow-lg shadow-emerald-600/25 ring-4 ring-emerald-100/80 transition-transform hover:scale-105 duration-300">
+              <Sparkles size={28} className="text-emerald-50" />
             </div>
             <div>
               <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-                TAPCARD LAUNDRY SHOP
+                {storeProfile.shopName}
               </h1>
-              <p className="text-sm text-slate-500 mt-1 font-medium">
-                Customer Laundry Status Tracker
+              <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700/80 mt-1">
+                Fresh Laundry Status Tracker
               </p>
             </div>
           </div>
 
-          {/* 2. Ticket ID Input & Proceed Form */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/90 space-y-5">
+          {/* 2. Ticket ID Input Card */}
+          <div className="bg-white/90 backdrop-blur-md rounded-3xl p-7 shadow-xl shadow-slate-200/50 border border-slate-200/80 space-y-6">
             <form onSubmit={handleProceed} className="space-y-4">
               <div>
                 <label 
                   htmlFor="customer-ticket-id-input"
-                  className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2"
+                  className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2.5"
                 >
                   Enter Ticket ID
                 </label>
@@ -177,23 +178,23 @@ export const CustomerTracker: React.FC = () => {
                       if (errorMessage) setErrorMessage(null);
                     }}
                     placeholder="e.g. LM1"
-                    className="w-full pl-10 pr-4 py-3 text-base font-mono font-extrabold text-slate-900 bg-slate-50/80 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 placeholder:text-slate-400 placeholder:font-normal uppercase tracking-wider transition-all"
+                    className="w-full pl-10 pr-4 py-3.5 text-base font-mono font-extrabold text-slate-900 bg-slate-50/80 border border-slate-200 rounded-2xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 placeholder:text-slate-400 placeholder:font-normal uppercase tracking-wider transition-all shadow-inner"
                   />
                 </div>
                 {errorMessage && (
-                  <div className="mt-2.5 flex items-start gap-2 text-xs text-rose-600 bg-rose-50 border border-rose-100 p-2.5 rounded-lg">
+                  <div className="mt-2.5 flex items-start gap-2 text-xs text-rose-600 bg-rose-50 border border-rose-100 p-3 rounded-xl">
                     <AlertCircle size={15} className="shrink-0 mt-0.5" />
                     <span>{errorMessage}</span>
                   </div>
                 )}
               </div>
 
-              {/* 3. Proceed Button */}
+              {/* Proceed Button */}
               <button
                 id="customer-proceed-btn"
                 type="submit"
                 disabled={isSearching}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold text-sm uppercase tracking-wider py-3.5 px-4 rounded-xl transition-all shadow-sm shadow-emerald-600/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75"
+                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 active:scale-[0.99] text-white font-bold text-sm uppercase tracking-wider py-4 px-4 rounded-2xl transition-all shadow-md shadow-emerald-600/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75"
               >
                 {isSearching ? (
                   <>
@@ -202,41 +203,18 @@ export const CustomerTracker: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <span>Proceed</span>
+                    <span>Track Order</span>
                     <ArrowRight size={16} />
                   </>
                 )}
               </button>
             </form>
-
-            {/* Quick Demo Sample Tickets */}
-            <div className="pt-4 border-t border-slate-100">
-              <span className="text-[11px] font-semibold text-slate-400 block mb-2 text-center">
-                Demo sample tickets:
-              </span>
-              <div className="flex flex-wrap items-center justify-center gap-1.5">
-                {quickSampleTickets.map((tid) => (
-                  <button
-                    key={tid}
-                    id={`demo-sample-ticket-${tid}`}
-                    type="button"
-                    onClick={() => {
-                      setInputVal(tid);
-                      handleProceed(undefined, tid);
-                    }}
-                    className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 transition-colors"
-                  >
-                    {tid}
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
 
           {/* Simple Store Footer Info */}
           <div className="text-center text-xs text-slate-400 space-y-1">
             <p className="font-medium text-slate-500">Open 7:00 AM – 9:00 PM Daily</p>
-            <p>Hotline: 0917 555 8921</p>
+            <p className="font-mono">Hotline: 0917 555 8921</p>
           </div>
 
         </div>
@@ -266,7 +244,7 @@ export const CustomerTracker: React.FC = () => {
           </button>
 
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-            TAPCARD LAUNDRY
+            {storeProfile.shopName}
           </span>
         </div>
 
@@ -423,13 +401,13 @@ export const CustomerTracker: React.FC = () => {
             <div className="p-4 bg-slate-900 text-white text-xs space-y-2">
               <div className="flex items-center gap-2 font-bold text-slate-200">
                 <Store size={14} className="text-emerald-400" />
-                <span>TAPCARD LAUNDRY SHOP</span>
+                <span>{storeProfile.shopName}</span>
               </div>
               <div className="flex items-center justify-between text-slate-400 text-[11px]">
                 <span className="flex items-center gap-1">
-                  <Phone size={11} /> 0917 555 8921
+                  <Phone size={11} /> {storeProfile.phone}
                 </span>
-                <span>Open 7:00 AM – 9:00 PM Daily</span>
+                <span>Open {storeProfile.operatingHours}</span>
               </div>
             </div>
           </div>

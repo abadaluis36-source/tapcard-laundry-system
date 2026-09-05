@@ -68,39 +68,40 @@ export const OwnerDashboard: React.FC = () => {
   // 1. FINANCIAL REPORTS DATA AGGREGATION
   // ==========================================
 
-  // KPIs Aggregation
-  const latestDateStr = useMemo(() => {
-    if (payments.length > 0) {
-      const dates = payments.map(p => p.date ? p.date.substring(0, 10) : '').filter(Boolean);
-      dates.sort((a, b) => b.localeCompare(a));
-      return dates[0] || '2026-08-31';
-    }
-    return '2026-08-31';
-  }, [payments]);
+  // Date helpers
+  const todayDate = new Date();
+  const todayStr = todayDate.toISOString().substring(0, 10);
+  
+  const d7DaysAgoDate = new Date();
+  d7DaysAgoDate.setDate(todayDate.getDate() - 6);
+  const d7DaysAgoStr = d7DaysAgoDate.toISOString().substring(0, 10);
+  
+  const d30DaysAgoDate = new Date();
+  d30DaysAgoDate.setDate(todayDate.getDate() - 29);
+  const d30DaysAgoStr = d30DaysAgoDate.toISOString().substring(0, 10);
 
+  // KPIs Aggregation
   const totalRevenue = useMemo(() => {
     return payments.reduce((sum, p) => sum + (p.paymentStatus === 'PAID' ? p.amount : p.amount), 0);
   }, [payments]);
 
   const revenueToday = useMemo(() => {
     return payments
-      .filter(p => p.date && p.date.startsWith(latestDateStr))
+      .filter(p => p.date && p.date.substring(0, 10) === todayStr)
       .reduce((sum, p) => sum + p.amount, 0);
-  }, [payments, latestDateStr]);
+  }, [payments, todayStr]);
 
   const revenueWeekly = useMemo(() => {
-    const d7DaysAgo = '2026-08-24';
     return payments
-      .filter(p => p.date && p.date.substring(0, 10) >= d7DaysAgo)
+      .filter(p => p.date && p.date.substring(0, 10) >= d7DaysAgoStr && p.date.substring(0, 10) <= todayStr)
       .reduce((sum, p) => sum + p.amount, 0);
-  }, [payments]);
+  }, [payments, d7DaysAgoStr, todayStr]);
 
   const revenueMonthly = useMemo(() => {
-    const d30DaysAgo = '2026-08-01';
     return payments
-      .filter(p => p.date && p.date.substring(0, 10) >= d30DaysAgo)
+      .filter(p => p.date && p.date.substring(0, 10) >= d30DaysAgoStr && p.date.substring(0, 10) <= todayStr)
       .reduce((sum, p) => sum + p.amount, 0);
-  }, [payments]);
+  }, [payments, d30DaysAgoStr, todayStr]);
 
   const totalExpenses = useMemo(() => {
     return expenses.reduce((sum, e) => sum + e.amount, 0);
@@ -153,32 +154,34 @@ export const OwnerDashboard: React.FC = () => {
   // ==========================================
   const trendData = useMemo(() => {
     if (timeRange === 'weekly') {
-      // Group payments and expenses by Date
-      const dateMap = new Map<string, { revenue: number; expenses: number }>();
+      const last7Days = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - (6 - i));
+        return d.toISOString().substring(0, 10);
+      });
 
-      // Seed with recent distinct dates from payments & expenses
+      const dateMap = new Map<string, { revenue: number; expenses: number }>();
+      last7Days.forEach(d => dateMap.set(d, { revenue: 0, expenses: 0 }));
+
       payments.forEach(p => {
-        const d = p.date ? p.date.substring(0, 10) : '2026-08-31';
-        if (!dateMap.has(d)) dateMap.set(d, { revenue: 0, expenses: 0 });
-        dateMap.get(d)!.revenue += p.amount;
+        const d = p.date ? p.date.substring(0, 10) : '';
+        if (dateMap.has(d)) {
+          dateMap.get(d)!.revenue += p.amount;
+        }
       });
 
       expenses.forEach(e => {
-        const d = e.date ? e.date.substring(0, 10) : '2026-08-31';
-        if (!dateMap.has(d)) dateMap.set(d, { revenue: 0, expenses: 0 });
-        dateMap.get(d)!.expenses += e.amount;
+        const d = e.date ? e.date.substring(0, 10) : '';
+        if (dateMap.has(d)) {
+          dateMap.get(d)!.expenses += e.amount;
+        }
       });
 
-      // Sort dates chronologically
-      const sorted = Array.from(dateMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-
-      return sorted.map(([dateKey, values]) => {
-        // Format label: "Aug 31"
-        const parts = dateKey.split('-');
-        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const m = parseInt(parts[1], 10) || 8;
-        const d = parseInt(parts[2], 10) || 31;
-        const label = `${monthNames[m - 1]} ${d}`;
+      return last7Days.map(dateKey => {
+        const values = dateMap.get(dateKey)!;
+        const dObj = new Date(dateKey + 'T00:00:00');
+        // Format label as Mon, Tue, Wed, etc.
+        const label = dObj.toLocaleDateString('en-US', { weekday: 'short' });
 
         return {
           label,
@@ -190,35 +193,78 @@ export const OwnerDashboard: React.FC = () => {
       });
     } else {
       // Monthly aggregation
-      const monthMap = new Map<string, { revenue: number; expenses: number }>();
-      const defaultMonths = ['2026-05', '2026-06', '2026-07', '2026-08'];
-      
-      defaultMonths.forEach(m => {
-        monthMap.set(m, { revenue: 0, expenses: 0 });
+      const last6Months = Array.from({ length: 6 }, (_, i) => {
+        const d = new Date();
+        d.setMonth(d.getMonth() - (5 - i));
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        return `${y}-${m}`;
       });
 
-      // Historical baseline
-      monthMap.set('2026-05', { revenue: 168000, expenses: 41200 });
-      monthMap.set('2026-06', { revenue: 174000, expenses: 39800 });
-      monthMap.set('2026-07', { revenue: 179500, expenses: 43100 });
-      monthMap.set('2026-08', { revenue: totalRevenue, expenses: totalExpenses });
+      const monthMap = new Map<string, { revenue: number; expenses: number }>();
+      last6Months.forEach(m => monthMap.set(m, { revenue: 0, expenses: 0 }));
 
-      const monthNames: Record<string, string> = {
-        '2026-05': 'May 2026',
-        '2026-06': 'Jun 2026',
-        '2026-07': 'Jul 2026',
-        '2026-08': 'Aug 2026 (MTD)'
-      };
+      payments.forEach(p => {
+        const dateStr = p.date || '';
+        let mKey = '';
+        if (dateStr.length >= 7 && dateStr.includes('-')) {
+          mKey = dateStr.substring(0, 7);
+        } else {
+          const parsed = new Date(dateStr);
+          if (!isNaN(parsed.getTime())) {
+            const y = parsed.getFullYear();
+            const m = String(parsed.getMonth() + 1).padStart(2, '0');
+            mKey = `${y}-${m}`;
+          }
+        }
+        if (mKey) {
+          if (!monthMap.has(mKey)) {
+            monthMap.set(mKey, { revenue: 0, expenses: 0 });
+          }
+          const curr = monthMap.get(mKey)!;
+          curr.revenue += p.amount;
+        }
+      });
 
-      return Array.from(monthMap.entries()).map(([mKey, values]) => ({
-        label: monthNames[mKey] || mKey,
-        fullDate: mKey,
-        revenue: values.revenue,
-        expenses: values.expenses,
-        net: values.revenue - values.expenses
-      }));
+      expenses.forEach(e => {
+        const dateStr = e.date || '';
+        let mKey = '';
+        if (dateStr.length >= 7 && dateStr.includes('-')) {
+          mKey = dateStr.substring(0, 7);
+        } else {
+          const parsed = new Date(dateStr);
+          if (!isNaN(parsed.getTime())) {
+            const y = parsed.getFullYear();
+            const m = String(parsed.getMonth() + 1).padStart(2, '0');
+            mKey = `${y}-${m}`;
+          }
+        }
+        if (mKey) {
+          if (!monthMap.has(mKey)) {
+            monthMap.set(mKey, { revenue: 0, expenses: 0 });
+          }
+          const curr = monthMap.get(mKey)!;
+          curr.expenses += e.amount;
+        }
+      });
+
+      const monthNamesShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      
+      return last6Months.map(mKey => {
+        const values = monthMap.get(mKey) || { revenue: 0, expenses: 0 };
+        const [year, month] = mKey.split('-');
+        const label = `${monthNamesShort[parseInt(month, 10) - 1]} ${year}`;
+        
+        return {
+          label,
+          fullDate: mKey,
+          revenue: values.revenue,
+          expenses: values.expenses,
+          net: values.revenue - values.expenses
+        };
+      });
     }
-  }, [timeRange, payments, expenses, totalRevenue, totalExpenses]);
+  }, [timeRange, payments, expenses]);
 
   // ==========================================
   // 3. SERVICE REVENUE BREAKDOWN FROM TICKETS
@@ -297,7 +343,7 @@ export const OwnerDashboard: React.FC = () => {
         {/* Revenue Today */}
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold uppercase tracking-wider">Revenue Today</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Today's Revenue</span>
             <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xs">
               ₱
             </div>
@@ -310,7 +356,7 @@ export const OwnerDashboard: React.FC = () => {
         {/* Revenue Weekly */}
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold uppercase tracking-wider">Revenue Weekly</span>
+            <span className="text-xs font-bold uppercase tracking-wider">This Week's Revenue</span>
             <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs">
               <Calendar size={14} />
             </div>
@@ -323,7 +369,7 @@ export const OwnerDashboard: React.FC = () => {
         {/* Revenue Monthly */}
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold uppercase tracking-wider">Revenue Monthly</span>
+            <span className="text-xs font-bold uppercase tracking-wider">This Month's Revenue</span>
             <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs">
               <BarChart3 size={14} />
             </div>
@@ -336,7 +382,7 @@ export const OwnerDashboard: React.FC = () => {
         {/* Total Expense */}
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold uppercase tracking-wider">Total Expense</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Overall Expenses</span>
             <div className="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-xs">
               <Receipt size={14} />
             </div>
@@ -547,9 +593,11 @@ export const OwnerDashboard: React.FC = () => {
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
             <div key={d} className="text-[10px] font-bold text-slate-400 text-center py-1">{d}</div>
           ))}
-          {Array.from({ length: 30 }).map((_, i) => {
+          {Array.from({ length: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() }).map((_, i) => {
             const day = i + 1;
-            const dateStr = `2026-09-${day.toString().padStart(2, '0')}`;
+            const year = new Date().getFullYear();
+            const month = (new Date().getMonth() + 1).toString().padStart(2, '0');
+            const dateStr = `${year}-${month}-${day.toString().padStart(2, '0')}`;
             const isSelected = dateStr === selectedDate;
             return (
               <button

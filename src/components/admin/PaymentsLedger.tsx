@@ -166,11 +166,11 @@ export const PaymentsLedger: React.FC = () => {
     // 2. Unpaid tickets will NOT go to payments automatically — they ONLY go when the order is COMPLETED!
     tickets.forEach(t => {
       if (t.status === 'COMPLETED') {
-        const unpaidBalance = t.totalAmount - (t.amountPaid || 0);
-        if (t.paymentStatus === 'UNPAID' || (t.paymentStatus === 'PARTIAL' && unpaidBalance > 0)) {
-          // Check if there is already a full payment recorded for this ticket
-          const hasFullPayment = payments.some(p => p.ticketId === t.id && p.amount >= t.totalAmount);
-          if (!hasFullPayment) {
+        const totalPaidForTicket = payments.filter(p => p.ticketId === t.id).reduce((s, p) => s + p.amount, 0);
+        const unpaidBalance = Math.max(0, t.totalAmount - Math.max(t.amountPaid || 0, totalPaidForTicket));
+        if (unpaidBalance > 0 && t.paymentStatus !== 'PAID') {
+          // Only add receivable if total paid is less than total amount
+          if (totalPaidForTicket < t.totalAmount) {
             list.push({
               id: `unpaid-${t.id}`,
               date: t.completedAt || t.createdAt,
@@ -267,8 +267,8 @@ export const PaymentsLedger: React.FC = () => {
   // Filter transactions belonging to the active day within 7:00 AM – 10:00 PM (actual collections only)
   const dailyShiftTransactions = useMemo(() => {
     return allLedgerItems.filter(item => {
-      // Exclude unpaid balances from collected cash metrics
-      if (item.isReceivable && item.paymentStatus === 'UNPAID') return false;
+      // Exclude unpaid balances (receivables) from collected cash/gcash metrics
+      if (item.isReceivable) return false;
       const itemDateKey = extractDateKey(item.date);
       if (itemDateKey !== activeDailyDateKey) return false;
       return isWithin7AmTo10Pm(item.date);
@@ -435,7 +435,7 @@ export const PaymentsLedger: React.FC = () => {
                         <thead>
                           <tr className="bg-slate-50 border-b border-slate-300 text-slate-700 font-semibold select-none">
                             <th className="w-[20%] py-2 px-1.5 sm:px-3 text-center border-r border-slate-300 font-semibold whitespace-nowrap">
-                              Time / Date
+                              Time
                             </th>
                             <th className="w-[15%] py-2 px-2 sm:px-3 text-center border-r border-slate-300 font-semibold whitespace-nowrap">
                               Ticket
@@ -463,10 +463,9 @@ export const PaymentsLedger: React.FC = () => {
                                   p.paymentStatus === 'UNPAID' ? 'bg-rose-50/30 hover:bg-rose-50/70' : 'hover:bg-sky-50/60'
                                 }`}
                               >
-                                {/* Date & Time */}
+                                {/* Time */}
                                 <td className="py-2 px-1.5 sm:px-3 text-center font-mono text-slate-600 border-r border-slate-200 whitespace-nowrap text-[9px] sm:text-xs">
-                                  <span className="hidden sm:inline">{p.date}</span>
-                                  <span className="sm:hidden">{timeStr || p.date}</span>
+                                  <span>{timeStr || p.date}</span>
                                 </td>
 
                                 {/* Ticket Number */}

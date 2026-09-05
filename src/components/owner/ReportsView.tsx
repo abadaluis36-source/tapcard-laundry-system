@@ -33,7 +33,16 @@ interface DisplayRevenueItem {
 }
 
 export const ReportsView: React.FC = () => {
-  const { payments, tickets, expenses, addToast } = useLaundry();
+  const { 
+    payments, 
+    tickets, 
+    expenses, 
+    addToast,
+    expenseSubmissions,
+    revenueSubmissions,
+    sendExpenseReportToBoss,
+    sendRevenueReportToBoss
+  } = useLaundry();
 
   // Admin choice between Total Revenue file or Expense file
   const [activeReportChoice, setActiveReportChoice] = useState<'REVENUE' | 'EXPENSES'>('REVENUE');
@@ -114,10 +123,10 @@ export const ReportsView: React.FC = () => {
     // Completed ticket receivables (unpaid balance settled on pickup)
     tickets.forEach(t => {
       if (t.status === 'COMPLETED') {
-        const unpaidBalance = t.totalAmount - (t.amountPaid || 0);
-        if (t.paymentStatus === 'UNPAID' || (t.paymentStatus === 'PARTIAL' && unpaidBalance > 0)) {
-          const hasFullPayment = payments.some(p => p.ticketId === t.id && p.amount >= t.totalAmount);
-          if (!hasFullPayment) {
+        const totalPaidForTicket = payments.filter(p => p.ticketId === t.id).reduce((s, p) => s + p.amount, 0);
+        const unpaidBalance = Math.max(0, t.totalAmount - Math.max(t.amountPaid || 0, totalPaidForTicket));
+        if (unpaidBalance > 0 && t.paymentStatus !== 'PAID') {
+          if (totalPaidForTicket < t.totalAmount) {
             const d = t.completedAt || t.createdAt;
             list.push({
               id: `unpaid-${t.id}`,
@@ -151,8 +160,8 @@ export const ReportsView: React.FC = () => {
       .sort((a, b) => b[0].localeCompare(a[0]))
       .map(([date, items]) => {
         const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
-        const cashAmount = items.filter(i => i.paymentMethod === 'CASH').reduce((sum, i) => sum + i.amount, 0);
-        const gcashAmount = items.filter(i => i.paymentMethod === 'GCASH').reduce((sum, i) => sum + i.amount, 0);
+        const cashAmount = items.filter(i => !i.isReceivable && i.paymentMethod === 'CASH').reduce((sum, i) => sum + i.amount, 0);
+        const gcashAmount = items.filter(i => !i.isReceivable && i.paymentMethod === 'GCASH').reduce((sum, i) => sum + i.amount, 0);
         return {
           date,
           buttonLabel: formatButtonLabel('Payment', date),
@@ -471,8 +480,7 @@ export const ReportsView: React.FC = () => {
                       {/* Actions for this specific date */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-100">
                         <div className="flex items-center gap-2 text-xs text-slate-500 font-mono">
-                          <CheckCircle2 size={13} className="text-emerald-600" />
-                          <span>Automatically synced with Payment records</span>
+                          {/* Replaced synced note with an empty div for spacing or you could remove it, but flex-between needs left side if we want buttons on right. We'll leave it empty. */}
                         </div>
 
                         <div className="flex items-center gap-2">
@@ -599,8 +607,7 @@ export const ReportsView: React.FC = () => {
                       {/* Actions for this specific date */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-100">
                         <div className="flex items-center gap-2 text-xs text-slate-500 font-mono">
-                          <CheckCircle2 size={13} className="text-emerald-600" />
-                          <span>Automatically synced with Expense records ({group.totalPieces} pcs)</span>
+                          {/* Replaced synced note with empty div */}
                         </div>
 
                         <div className="flex items-center gap-2">
