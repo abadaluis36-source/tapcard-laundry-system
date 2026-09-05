@@ -24,35 +24,11 @@ import {
 export const Sidebar: React.FC = () => {
   const { 
     role, 
-    setRole,
     adminTab, 
     setAdminTab, 
     ownerTab, 
     setOwnerTab,
-    pendingOrdersCount,
-    lowStockItemsCount,
-    tickets,
-    expenseSubmissions,
-    currentUser,
-    logout,
-    setIsAuthModalOpen,
-    setAuthModalTargetRole
   } = useLaundry();
-
-  const handleToggleRole = () => {
-    if (role === 'ADMIN') {
-      if (!currentUser || currentUser.role !== 'OWNER') {
-        setAuthModalTargetRole('OWNER');
-        setIsAuthModalOpen(true);
-      } else {
-        setRole('OWNER');
-      }
-    } else {
-      setRole('ADMIN');
-    }
-  };
-
-  const pendingAuditsCount = Object.values(expenseSubmissions || {}).filter((s: ExpenseSubmission) => s.status === 'PENDING_REVIEW').length;
 
   // Admin / Staff navigation items (Focused on Counter POS & Shift Operations)
   const adminNavItems: Array<{ id: AdminTab; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; badge?: number; isHighlight?: boolean }> = [

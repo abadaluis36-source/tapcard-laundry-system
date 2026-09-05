@@ -149,11 +149,11 @@ export const AUTH_USERS: AuthUser[] = [
   },
   {
     id: 'user-owner-1',
-    name: 'Alex Morgan',
+    name: 'Miguel',
     username: 'owner',
     email: 'owner@tapcard.ph',
     role: 'OWNER',
-    staffCode: 'OWN-01',
+    staffCode: '',
     title: 'Shop Owner & Managing Director',
     pin: '8888',
     password: '8888',

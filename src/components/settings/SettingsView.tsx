@@ -20,21 +20,21 @@ export const SettingsView: React.FC = () => {
 
   // Shop Profile state
   const [shopName, setShopName] = useState(storeProfile.shopName);
-  const [ownerName, setOwnerName] = useState(storeProfile.ownerName || 'Maria Santos');
+  const [ownerName, setOwnerName] = useState(storeProfile.ownerName ?? 'Miguel');
   const [tagline, setTagline] = useState(storeProfile.tagline);
   const [phone, setPhone] = useState(storeProfile.phone);
   const [address, setAddress] = useState(storeProfile.address);
   const [operatingHours, setOperatingHours] = useState(storeProfile.operatingHours);
 
-  // Sync if storeProfile changes externally
+  // Sync if storeProfile properties change
   useEffect(() => {
-    setShopName(storeProfile.shopName);
-    setOwnerName(storeProfile.ownerName || 'Maria Santos');
-    setTagline(storeProfile.tagline);
-    setPhone(storeProfile.phone);
-    setAddress(storeProfile.address);
-    setOperatingHours(storeProfile.operatingHours);
-  }, [storeProfile]);
+    setShopName(storeProfile.shopName ?? '');
+    setOwnerName(storeProfile.ownerName ?? '');
+    setTagline(storeProfile.tagline ?? '');
+    setPhone(storeProfile.phone ?? '');
+    setAddress(storeProfile.address ?? '');
+    setOperatingHours(storeProfile.operatingHours ?? '');
+  }, [storeProfile.shopName, storeProfile.ownerName, storeProfile.tagline, storeProfile.phone, storeProfile.address, storeProfile.operatingHours]);
 
   // Owner Credentials state
   const ownerUser = authUsers.find(u => u.role === 'OWNER') || authUsers[0];

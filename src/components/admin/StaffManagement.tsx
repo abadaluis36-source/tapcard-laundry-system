@@ -30,8 +30,8 @@ export const StaffManagement: React.FC = () => {
     addToast 
   } = useLaundry();
 
-  // Filter Admin and Owner accounts
-  const adminUsers = authUsers.filter(u => u.role === 'ADMIN' || u.role === 'OWNER');
+  // Filter Admin accounts only (Owner profile is in Shop Details)
+  const adminUsers = authUsers.filter(u => u.role === 'ADMIN');
 
   // Modal / Form state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -177,7 +177,7 @@ export const StaffManagement: React.FC = () => {
         avatarUrl: adminAvatarUrl || undefined,
         role: 'ADMIN',
         staffCode: `STF-${(adminUsers.length + 1).toString().padStart(2, '0')}`,
-        title: 'Staff / Admin POS',
+        title: 'Staff',
         email: `${cleanUsername}@tapcard.ph`,
         branch: 'Makati Central Branch',
         shift: 'Regular Shift',

@@ -387,36 +387,42 @@ export const CreateTicketView: React.FC<CreateTicketProps> = ({ isModal = false,
           </div>
 
           {/* Quick Service Cards Selector */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {services.map((srv) => {
-              const isSelected = selectedServiceId === srv.id;
-              return (
-                <div
-                  key={srv.id}
-                  onClick={() => handleSelectService(srv)}
-                  className={`p-3 rounded-xl border text-xs cursor-pointer transition-all flex flex-col justify-between ${
-                    isSelected
-                      ? 'border-emerald-600 bg-emerald-50/80 text-emerald-950 shadow-sm font-bold ring-2 ring-emerald-500/30'
-                      : 'border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/20 bg-white text-slate-700'
-                  }`}
-                >
-                  <span className="font-bold text-xs">{srv.name}</span>
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="font-extrabold text-emerald-700 font-mono">
-                      ₱{srv.price} <span className="text-[10px] font-normal text-slate-500">/{srv.unitType}</span>
-                    </span>
-                    {isSelected ? (
-                      <span className="bg-emerald-600 text-white rounded-full p-0.5">
-                        <Check size={12} />
+          {services.filter(srv => srv.isActive).length === 0 ? (
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-center text-xs font-semibold text-amber-800">
+              No active services available. Please activate or add services in Settings &gt; Services.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {services.filter(srv => srv.isActive).map((srv) => {
+                const isSelected = selectedServiceId === srv.id;
+                return (
+                  <div
+                    key={srv.id}
+                    onClick={() => handleSelectService(srv)}
+                    className={`p-3 rounded-xl border text-xs cursor-pointer transition-all flex flex-col justify-between ${
+                      isSelected
+                        ? 'border-emerald-600 bg-emerald-50/80 text-emerald-950 shadow-sm font-bold ring-2 ring-emerald-500/30'
+                        : 'border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/20 bg-white text-slate-700'
+                    }`}
+                  >
+                    <span className="font-bold text-xs">{srv.name}</span>
+                    <div className="mt-2 flex items-center justify-between">
+                      <span className="font-extrabold text-emerald-700 font-mono">
+                        ₱{srv.price} <span className="text-[10px] font-normal text-slate-500">/{srv.unitType}</span>
                       </span>
-                    ) : (
-                      <span className="text-[10px] font-semibold text-slate-400">Select</span>
-                    )}
+                      {isSelected ? (
+                        <span className="bg-emerald-600 text-white rounded-full p-0.5">
+                          <Check size={12} />
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-semibold text-slate-400">Select</span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Quantity & Weight Adjuster */}
           <div 

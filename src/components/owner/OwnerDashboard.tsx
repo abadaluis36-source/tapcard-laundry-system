@@ -56,7 +56,7 @@ export const OwnerDashboard: React.FC = () => {
 
   const [timeRange, setTimeRange] = useState<'weekly' | 'monthly'>('weekly');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().substring(0, 10));
-  const yAxisDomain = useMemo(() => timeRange === 'weekly' ? [0, 10000] : [1000, 30000], [timeRange]);
+  const yAxisDomain = useMemo(() => timeRange === 'weekly' ? [0, 8000] : [1000, 30000], [timeRange]);
 
   const revenueOnSelectedDate = useMemo(() => {
     return payments
@@ -154,14 +154,21 @@ export const OwnerDashboard: React.FC = () => {
   // ==========================================
   const trendData = useMemo(() => {
     if (timeRange === 'weekly') {
-      const last7Days = Array.from({ length: 7 }, (_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() - (6 - i));
+      const today = new Date();
+      const dayOfWeek = today.getDay(); // 0 is Sun, 1 is Mon, ... 6 is Sat
+      const distToMonday = (dayOfWeek + 6) % 7;
+
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - distToMonday);
+
+      const weekDays = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
         return d.toISOString().substring(0, 10);
       });
 
       const dateMap = new Map<string, { revenue: number; expenses: number }>();
-      last7Days.forEach(d => dateMap.set(d, { revenue: 0, expenses: 0 }));
+      weekDays.forEach(d => dateMap.set(d, { revenue: 0, expenses: 0 }));
 
       payments.forEach(p => {
         const d = p.date ? p.date.substring(0, 10) : '';
@@ -177,10 +184,10 @@ export const OwnerDashboard: React.FC = () => {
         }
       });
 
-      return last7Days.map(dateKey => {
+      return weekDays.map(dateKey => {
         const values = dateMap.get(dateKey)!;
         const dObj = new Date(dateKey + 'T00:00:00');
-        // Format label as Mon, Tue, Wed, etc.
+        // Format label as Mon, Tue, Wed, Thu, Fri, Sat, Sun
         const label = dObj.toLocaleDateString('en-US', { weekday: 'short' });
 
         return {
@@ -448,6 +455,7 @@ export const OwnerDashboard: React.FC = () => {
                   axisLine={false}
                   tickLine={false}
                   domain={yAxisDomain}
+                  ticks={timeRange === 'weekly' ? [0, 2000, 4000, 6000, 8000] : undefined}
                   tickFormatter={(val) => `₱${val >= 1000 ? `${(val/1000).toFixed(0)}k` : val}`}
                 />
                 <Tooltip 
@@ -541,6 +549,8 @@ export const OwnerDashboard: React.FC = () => {
                   tick={{ fontSize: 11, fill: '#64748b' }}
                   axisLine={false}
                   tickLine={false}
+                  domain={yAxisDomain}
+                  ticks={timeRange === 'weekly' ? [0, 2000, 4000, 6000, 8000] : undefined}
                   tickFormatter={(val) => `₱${val >= 1000 ? `${(val/1000).toFixed(0)}k` : val}`}
                 />
                 <Tooltip 

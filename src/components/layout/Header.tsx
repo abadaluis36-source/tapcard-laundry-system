@@ -4,7 +4,6 @@ import { UserRole } from '../../types';
 import { 
   PlusCircle, 
   Store, 
-  Smartphone, 
   ShieldAlert, 
   TrendingUp, 
   UserCheck, 
@@ -15,7 +14,8 @@ import {
   User,
   KeyRound,
   ChevronDown,
-  RefreshCw
+  RefreshCw,
+  Search
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -28,7 +28,8 @@ export const Header: React.FC = () => {
     logout,
     setIsAuthModalOpen,
     setAuthModalTargetRole,
-    storeProfile
+    storeProfile,
+    addToast
   } = useLaundry();
 
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -51,21 +52,9 @@ export const Header: React.FC = () => {
       return;
     }
 
-    if (!currentUser) {
-      setAuthModalTargetRole(targetRole);
-      setIsAuthModalOpen(true);
-      setRole(targetRole);
-      return;
-    }
-
-    // If logged in as ADMIN trying to open OWNER, or vice versa
-    if (targetRole === 'OWNER' && currentUser.role !== 'OWNER') {
-      setAuthModalTargetRole('OWNER');
-      setIsAuthModalOpen(true);
-      return;
-    }
-
-    setRole(targetRole);
+    // Role-Based Access Control (RBAC): Switching roles requires authenticating through the login form
+    setAuthModalTargetRole(targetRole);
+    setIsAuthModalOpen(true);
   };
 
   return (
@@ -84,15 +73,9 @@ export const Header: React.FC = () => {
               }}
               className="cursor-pointer flex items-center gap-2 group min-w-0"
             >
-              {/* Logo Coin mark */}
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-xs font-black text-base sm:text-lg border border-slate-700 relative overflow-hidden group-hover:bg-slate-800 transition-colors shrink-0">
-                <span className="text-emerald-400 font-extrabold">₱</span>
-                <div className="absolute -top-1 -right-1 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-emerald-500 rounded-full ring-2 ring-white animate-pulse" />
-              </div>
-
               <div className="min-w-0">
-                <span className="font-extrabold text-xs sm:text-base md:text-lg text-slate-900 tracking-tight leading-none truncate block">
-                  {storeProfile.shopName}
+                <span className="font-extrabold text-sm sm:text-base md:text-lg text-slate-900 tracking-tight leading-none truncate block">
+                  {storeProfile?.shopName || 'Wis Laundry System'}
                 </span>
                 <span className="text-[10px] sm:text-[11px] font-medium text-slate-500 hidden sm:inline-block leading-tight">
                   Management & Tracking System
@@ -147,7 +130,7 @@ export const Header: React.FC = () => {
                       <div className={`w-7 h-7 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center font-black text-xs text-white shadow-xs ${
                         currentUser.role === 'OWNER' ? 'bg-indigo-600' : 'bg-emerald-600'
                       }`}>
-                        {currentUser.name.charAt(0)}
+                        {(currentUser.role === 'OWNER' ? (storeProfile.ownerName || currentUser.name) : currentUser.name).charAt(0)}
                       </div>
                     )}
                     <div className="hidden sm:block text-left leading-none">
@@ -155,7 +138,7 @@ export const Header: React.FC = () => {
                         {currentUser.role === 'OWNER' ? (storeProfile.ownerName || currentUser.name) : currentUser.name.split(' ')[0]}
                       </span>
                       <span className="text-[9px] text-slate-500 font-medium leading-none font-mono">
-                        {currentUser.role === 'OWNER' ? 'Shop Owner' : 'Staff'}
+                        {currentUser.role === 'OWNER' ? 'Owner' : 'Staff'}
                       </span>
                     </div>
                     <ChevronDown size={14} className={`text-slate-400 transition-transform ${isProfileMenuOpen ? 'rotate-180 text-slate-700' : ''}`} />
@@ -180,12 +163,17 @@ export const Header: React.FC = () => {
                             <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-sm text-white shadow-xs ${
                               currentUser.role === 'OWNER' ? 'bg-indigo-600' : 'bg-emerald-600'
                             }`}>
-                              {currentUser.name.charAt(0)}
+                              {(currentUser.role === 'OWNER' ? (storeProfile.ownerName || currentUser.name) : currentUser.name).charAt(0)}
                             </div>
                           )}
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs font-bold text-slate-900 truncate">{currentUser.name}</p>
-                            <p className="text-[10px] text-slate-500 truncate">{currentUser.title} • <span className="font-mono">{currentUser.staffCode}</span></p>
+                            <p className="text-xs font-bold text-slate-900 truncate">
+                              {currentUser.role === 'OWNER' ? (storeProfile.ownerName || currentUser.name) : currentUser.name}
+                            </p>
+                            <p className="text-[10px] text-slate-500 truncate">
+                              {currentUser.role === 'OWNER' ? 'Owner' : 'Staff'}
+                              {currentUser.role !== 'OWNER' && currentUser.staffCode && ` • ${currentUser.staffCode}`}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -198,6 +186,7 @@ export const Header: React.FC = () => {
 
                         <button
                           type="button"
+                          id="profile-menu-switch-staff-btn"
                           onClick={() => {
                             handleRoleSelect('ADMIN');
                             setIsProfileMenuOpen(false);
@@ -208,13 +197,19 @@ export const Header: React.FC = () => {
                         >
                           <div className="flex items-center gap-2">
                             <UserCheck size={14} className={role === 'ADMIN' ? 'text-emerald-600' : 'text-slate-400'} />
-                            <span>Staff / Admin POS</span>
+                            <span>Staff Account</span>
                           </div>
-                          {role === 'ADMIN' && <span className="text-[10px] bg-emerald-600 text-white font-bold px-1.5 py-0.2 rounded">Active</span>}
+                          {role === 'ADMIN' ? (
+                            <span className="text-[10px] bg-emerald-600 text-white font-bold px-1.5 py-0.2 rounded">Active</span>
+                          ) : (
+                            <span className="text-[10px] text-slate-400 font-medium">Log in</span>
+                          )}
                         </button>
 
+                        {/* Owner Role Option - Requires Owner authentication via login form under RBAC */}
                         <button
                           type="button"
+                          id="profile-menu-switch-owner-btn"
                           onClick={() => {
                             handleRoleSelect('OWNER');
                             setIsProfileMenuOpen(false);
@@ -225,26 +220,35 @@ export const Header: React.FC = () => {
                         >
                           <div className="flex items-center gap-2">
                             <TrendingUp size={14} className={role === 'OWNER' ? 'text-indigo-600' : 'text-slate-400'} />
-                            <span>Boss / Owner View</span>
+                            <span>Owner / Boss</span>
                           </div>
-                          {role === 'OWNER' && <span className="text-[10px] bg-indigo-600 text-white font-bold px-1.5 py-0.2 rounded">Active</span>}
+                          {role === 'OWNER' ? (
+                            <span className="text-[10px] bg-indigo-600 text-white font-bold px-1.5 py-0.2 rounded">Active</span>
+                          ) : (
+                            <span className="text-[10px] text-slate-400 font-medium flex items-center gap-0.5">
+                              <Lock size={10} />
+                              <span>Log in</span>
+                            </span>
+                          )}
                         </button>
 
+                        {/* Customer Tracking View option */}
                         <button
                           type="button"
+                          id="profile-menu-customer-tracking-btn"
                           onClick={() => {
                             handleRoleSelect('CUSTOMER');
                             setIsProfileMenuOpen(false);
                           }}
                           className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-semibold text-left transition-colors cursor-pointer ${
-                            role === 'CUSTOMER' ? 'bg-slate-100 text-slate-900 font-bold' : 'hover:bg-slate-100 text-slate-700'
+                            role === 'CUSTOMER' ? 'bg-sky-50 text-sky-800 font-bold' : 'hover:bg-slate-100 text-slate-700'
                           }`}
                         >
                           <div className="flex items-center gap-2">
-                            <Smartphone size={14} className="text-slate-400" />
-                            <span>Customer Laundry Tracker</span>
+                            <Search size={14} className={role === 'CUSTOMER' ? 'text-sky-600' : 'text-slate-400'} />
+                            <span>Customer Tracking</span>
                           </div>
-                          {role === 'CUSTOMER' && <span className="text-[10px] bg-slate-900 text-white font-bold px-1.5 py-0.2 rounded">Active</span>}
+                          {role === 'CUSTOMER' && <span className="text-[10px] bg-sky-600 text-white font-bold px-1.5 py-0.2 rounded">Active</span>}
                         </button>
                       </div>
 
@@ -273,9 +277,14 @@ export const Header: React.FC = () => {
                     setAuthModalTargetRole('ADMIN');
                     setIsAuthModalOpen(true);
                   }}
-                  className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-3 py-1.5 sm:py-2 rounded-xl transition-all shadow-xs active:scale-95 cursor-pointer"
+                  disabled={!currentUser && role !== 'CUSTOMER'}
+                  className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 sm:py-2 rounded-xl transition-all shadow-xs ${
+                    !currentUser && role !== 'CUSTOMER'
+                      ? 'bg-slate-900 text-white cursor-not-allowed'
+                      : 'bg-slate-900 hover:bg-slate-800 text-white active:scale-95 cursor-pointer'
+                  }`}
                 >
-                  <User size={13} className="text-emerald-400" />
+                  <User size={13} className={!currentUser && role !== 'CUSTOMER' ? 'text-emerald-400' : 'text-emerald-400'} />
                   <span>Log In</span>
                 </button>
               )}

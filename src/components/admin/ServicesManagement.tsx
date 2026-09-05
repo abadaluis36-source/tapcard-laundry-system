@@ -89,7 +89,7 @@ export const ServicesManagement: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-700 border border-indigo-200 uppercase tracking-wider">
-              Boss / Owner Authority
+              Owner Authority
             </span>
             <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
               <Sparkles size={12} />

@@ -14,7 +14,8 @@ import {
   UserRole,
   AdminTab,
   OwnerTab,
-  AuthUser
+  AuthUser,
+  StoreProfile
 } from '../types';
 import { 
   INITIAL_CUSTOMERS, 
@@ -126,21 +127,32 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          // Check if Alex Morgan exists in saved users
+          const hasAlex = parsed.some((u: AuthUser) => u.name?.includes('Alex'));
+          if (!hasAlex) {
+            return parsed.map((u: AuthUser) => u.role === 'OWNER' ? { ...u, name: u.name || 'Miguel', staffCode: '' } : u);
+          }
         }
       }
     } catch {
       // fallback
     }
+    localStorage.setItem('tapcard_auth_users', JSON.stringify(AUTH_USERS));
     return AUTH_USERS;
   });
 
-  // Auth state - initialized to Arlene Santos by default for smooth demonstration, but allows logout
+  // Auth state
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
     try {
       const saved = localStorage.getItem('tapcard_auth_user');
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (parsed && !parsed.name?.includes('Alex')) {
+          if (parsed.role === 'OWNER') {
+            return { ...parsed, name: parsed.name || 'Miguel', staffCode: '' };
+          }
+          return parsed;
+        }
       }
     } catch {
       // fallback
@@ -174,17 +186,23 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [storeProfile, setStoreProfile] = useState<StoreProfile>(() => {
     try {
       const saved = localStorage.getItem('tapcard_store_profile');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.shopName === 'TAPCARD LAUNDRY SHOP' || parsed.shopName === 'WIS Laundry Shop System') {
+          parsed.shopName = 'Wis Laundry System';
+        }
+        return parsed;
+      }
     } catch {
       // fallback
     }
     return {
-      shopName: 'TAPCARD LAUNDRY SHOP',
+      shopName: 'Wis Laundry System',
       tagline: 'Professional Wash, Dry & Fold Services',
       phone: '0917 555 8921',
       address: 'Bonifacio Global City, Taguig City',
       operatingHours: '7:00 AM - 9:00 PM Daily',
-      ownerName: 'Maria Santos',
+      ownerName: 'Miguel',
     };
   });
 
@@ -197,7 +215,15 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [storeProfile]);
 
   const updateStoreProfile = (updatedData: Partial<StoreProfile>) => {
-    setStoreProfile(prev => ({ ...prev, ...updatedData }));
+    setStoreProfile(prev => {
+      const nextProfile = { ...prev, ...updatedData };
+      if (updatedData.ownerName !== undefined) {
+        const newOwnerName = updatedData.ownerName || 'Miguel';
+        setAuthUsers(users => users.map(u => u.role === 'OWNER' ? { ...u, name: newOwnerName } : u));
+        setCurrentUser(user => (user && user.role === 'OWNER') ? { ...user, name: newOwnerName } : user);
+      }
+      return nextProfile;
+    });
   };
 
   // Guarantee clean storage on initial mount
@@ -990,6 +1016,14 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     // Determine actual role
     const effectiveRole = foundUser.role;
 
+    // Strict Rule: Staff account cannot enter Boss / Owner UI
+    if (targetRole === 'OWNER' && effectiveRole !== 'OWNER') {
+      return {
+        success: false,
+        message: 'Access Denied: Staff accounts cannot access the Boss / Owner UI. Please sign in with Owner credentials.'
+      };
+    }
+
     // Check credentials against staff password, pin, or default fallback shortcuts
     const expectedPassword = foundUser.password || foundUser.pin;
     const isValidSecret = 
@@ -1018,14 +1052,18 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const logout = () => {
     setCurrentUser(null);
-    setRole('CUSTOMER');
+    setRole('ADMIN');
     setIsAuthModalOpen(false);
-    addToast('Logged Out', 'You have been safely signed out. Switched to Customer Tracker.', 'info');
+    addToast('Logged Out', 'You have been safely signed out.', 'info');
   };
 
   const switchUser = (userId: string) => {
     const user = authUsers.find(u => u.id === userId);
     if (user) {
+      if (currentUser?.role === 'ADMIN' && user.role === 'OWNER') {
+        addToast('Strict Rule', 'Staff cannot enter Boss UI directly. You must log out first.', 'warning');
+        return;
+      }
       setCurrentUser(user);
       setRole(user.role);
       addToast('Operator Switched', `Active operator set to ${user.name}`, 'info');
