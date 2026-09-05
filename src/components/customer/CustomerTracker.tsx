@@ -105,8 +105,9 @@ export const CustomerTracker: React.FC = () => {
     setErrorMessage(null);
   };
 
-  // 6-step progress pipeline definition
+  // Progress pipeline definition
   const STAGES: { status: LaundryStatus; label: string; desc: string }[] = [
+    { status: 'RECEIVED', label: 'Order Received', desc: 'Logged & queued for laundry' },
     { status: 'WASHING', label: 'Washing & Drying', desc: 'Sanitary deep wash, dry & conditioning' },
     { status: 'FOLDING', label: 'Folding & Press', desc: 'Neat fold & steam press' },
     { status: 'READY', label: 'Ready for Pickup', desc: 'Bagged & stored on rack' },
@@ -115,10 +116,11 @@ export const CustomerTracker: React.FC = () => {
 
   const getStageIndex = (status: LaundryStatus) => {
     switch (status) {
-      case 'WASHING': return 0;
-      case 'FOLDING': return 1;
-      case 'READY': return 2;
-      case 'COMPLETED': return 3;
+      case 'RECEIVED': return 0;
+      case 'WASHING': return 1;
+      case 'FOLDING': return 2;
+      case 'READY': return 3;
+      case 'COMPLETED': return 4;
       default: return 0;
     }
   };

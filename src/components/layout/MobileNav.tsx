@@ -55,8 +55,8 @@ export const MobileNav: React.FC = () => {
             <button
               id="mobile-nav-admin-payments"
               onClick={() => setAdminTab('payments')}
-              className={`flex flex-col items-center gap-0.5 py-1 px-1.5 sm:px-3 rounded-xl transition-colors ${
-                adminTab === 'payments' ? 'text-emerald-600 font-bold' : 'text-slate-500'
+              className={`flex flex-col items-center gap-0.5 py-1 px-1.5 sm:px-3 rounded-xl transition-colors cursor-pointer ${
+                adminTab === 'payments' ? 'text-emerald-600 font-bold' : 'text-slate-500 hover:text-slate-900'
               }`}
             >
               <DollarSign size={18} />

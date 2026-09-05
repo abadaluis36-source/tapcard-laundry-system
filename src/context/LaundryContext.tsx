@@ -83,6 +83,7 @@ interface LaundryContextType {
   updateTicketPayment: (ticketId: string, paymentStatus: PaymentStatus, amountPaid: number, method: PaymentMethod) => void;
   addCustomer: (customerData: Omit<Customer, 'id' | 'totalOrders' | 'totalSpent' | 'lastOrderDate' | 'activeTicketCount'>) => Customer;
   addExpense: (expenseData: Omit<Expense, 'id'>) => void;
+  addMultipleExpenses: (expensesData: Omit<Expense, 'id'>[]) => void;
   deleteExpense: (id: string) => void;
   sendExpenseReportToBoss: (date: string, senderName?: string) => void;
   reviewExpenseReport: (date: string, status: 'APPROVED' | 'PENDING_REVIEW', note?: string) => void;
@@ -146,32 +147,120 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [authModalTargetRole, setAuthModalTargetRole] = useState<'ADMIN' | 'OWNER'>('ADMIN');
   
-  const [tickets, setTickets] = useState<Ticket[]>(INITIAL_TICKETS);
-  const [customers, setCustomers] = useState<Customer[]>(INITIAL_CUSTOMERS);
+  // Clean old cached mock data once for a fresh clean test environment
+  const isFreshClean = (() => {
+    try {
+      return localStorage.getItem('tapcard_fresh_clean_v2') === 'true';
+    } catch {
+      return false;
+    }
+  })();
+
+  const [tickets, setTickets] = useState<Ticket[]>(() => {
+    if (!isFreshClean) return [];
+    try {
+      const saved = localStorage.getItem('tapcard_tickets');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // fallback
+    }
+    return INITIAL_TICKETS;
+  });
+  const [customers, setCustomers] = useState<Customer[]>(() => {
+    if (!isFreshClean) return [];
+    try {
+      const saved = localStorage.getItem('tapcard_customers');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // fallback
+    }
+    return INITIAL_CUSTOMERS;
+  });
   const [services, setServices] = useState<ServicePricing[]>(INITIAL_SERVICES);
-  const [expenses, setExpenses] = useState<Expense[]>(INITIAL_EXPENSES);
+  const [expenses, setExpenses] = useState<Expense[]>(() => {
+    if (!isFreshClean) return [];
+    try {
+      const saved = localStorage.getItem('tapcard_expenses');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // fallback
+    }
+    return INITIAL_EXPENSES;
+  });
   const [expenseSubmissions, setExpenseSubmissions] = useState<Record<string, ExpenseSubmission>>(() => {
+    if (!isFreshClean) return {};
     try {
       const saved = localStorage.getItem('tapcard_expense_submissions');
       if (saved) return JSON.parse(saved);
     } catch {
       // fallback
     }
-    return {
-      '2026-08-31': {
-        date: '2026-08-31',
-        sentAt: '2026-08-31 06:15 PM',
-        sentBy: 'Arlene Santos',
-        totalAmount: 2050,
-        totalPieces: 6,
-        itemCount: 2,
-        status: 'PENDING_REVIEW'
-      }
-    };
+    return {};
   });
   const [inventory, setInventory] = useState<InventoryItem[]>(INITIAL_INVENTORY);
-  const [payments, setPayments] = useState<PaymentTransaction[]>(INITIAL_PAYMENTS);
+  const [payments, setPayments] = useState<PaymentTransaction[]>(() => {
+    if (!isFreshClean) return [];
+    try {
+      const saved = localStorage.getItem('tapcard_payments');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // fallback
+    }
+    return INITIAL_PAYMENTS;
+  });
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
+
+  // Guarantee clean storage on initial mount
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('tapcard_fresh_clean_v2') !== 'true') {
+        localStorage.removeItem('tapcard_tickets');
+        localStorage.removeItem('tapcard_customers');
+        localStorage.removeItem('tapcard_expenses');
+        localStorage.removeItem('tapcard_expense_submissions');
+        localStorage.removeItem('tapcard_payments');
+        localStorage.setItem('tapcard_fresh_clean_v2', 'true');
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+  
+  // Save tickets in localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('tapcard_tickets', JSON.stringify(tickets));
+    } catch {
+      // ignore
+    }
+  }, [tickets]);
+
+  // Save customers in localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('tapcard_customers', JSON.stringify(customers));
+    } catch {
+      // ignore
+    }
+  }, [customers]);
+
+  // Save expenses in localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('tapcard_expenses', JSON.stringify(expenses));
+    } catch {
+      // ignore
+    }
+  }, [expenses]);
+
+  // Save payments in localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('tapcard_payments', JSON.stringify(payments));
+    } catch {
+      // ignore
+    }
+  }, [payments]);
   
   // Save expense submissions in localStorage
   useEffect(() => {
@@ -255,17 +344,18 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }) + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     const newId = `tkt-${Date.now()}`;
+    const initialStatus = newTicketData.status || 'RECEIVED';
     const newTicket: Ticket = {
       ...newTicketData,
       id: newId,
       createdAt: timeString,
-      status: 'WASHING',
+      status: initialStatus,
       statusHistory: [
         {
-          status: 'WASHING',
+          status: initialStatus,
           timestamp: timeString,
           updatedBy: 'Staff On Duty',
-          note: 'Ticket created at counter. Bagged and tagged.'
+          note: 'Ticket created at counter. Logged and received.'
         }
       ]
     };
@@ -519,10 +609,22 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const addExpense = (expenseData: Omit<Expense, 'id'>) => {
     const newExp: Expense = {
       ...expenseData,
-      id: `exp-${Date.now()}`
+      id: `exp-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
     };
     setExpenses((prev) => [newExp, ...prev]);
     addToast('Expense Added', `₱${newExp.amount.toLocaleString()} for ${newExp.category} recorded.`, 'success');
+  };
+
+  const addMultipleExpenses = (expensesData: Omit<Expense, 'id'>[]) => {
+    if (expensesData.length === 0) return;
+    const now = Date.now();
+    const newItems: Expense[] = expensesData.map((e, idx) => ({
+      ...e,
+      id: `exp-${now}-${idx}-${Math.random().toString(36).substring(2, 6)}`
+    }));
+    setExpenses((prev) => [...newItems, ...prev]);
+    const total = newItems.reduce((s, i) => s + i.amount, 0);
+    addToast('Expenses Saved', `${newItems.length} expenses recorded (₱${total.toLocaleString()} total).`, 'success');
   };
 
   const deleteExpense = (id: string) => {
@@ -941,6 +1043,7 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         updateTicketPayment,
         addCustomer,
         addExpense,
+        addMultipleExpenses,
         deleteExpense,
         sendExpenseReportToBoss,
         reviewExpenseReport,

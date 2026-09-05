@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useLaundry } from '../../context/LaundryContext';
 import { Expense } from '../../types';
 import { 
@@ -17,13 +17,14 @@ import {
   Zap,
   CheckCircle2,
   ChevronDown,
-  Send,
   Clock,
   ShieldCheck,
   Check,
   Eye,
   EyeOff,
-  Table
+  Table,
+  PlusCircle,
+  CornerDownLeft
 } from 'lucide-react';
 
 const EXPENSE_CATEGORIES: {
@@ -44,12 +45,20 @@ const EXPENSE_CATEGORIES: {
   { key: 'Other', label: 'Other Sundry Costs', icon: Layers, color: 'text-slate-600', bgColor: 'bg-slate-50', borderColor: 'border-slate-200' },
 ];
 
+export interface PendingExpenseItem {
+  id: string;
+  category: Expense['category'];
+  description: string;
+  pieces: number;
+  amount: number;
+}
+
 export const ExpensesManagement: React.FC = () => {
   const { 
     expenses, 
     expenseSubmissions,
-    sendExpenseReportToBoss,
     addExpense, 
+    addMultipleExpenses,
     deleteExpense,
     todayExpensesTotal, 
     monthlyExpensesTotal,
@@ -61,14 +70,27 @@ export const ExpensesManagement: React.FC = () => {
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
   const [isTableVisible, setIsTableVisible] = useState(false);
 
-  // New Expense Form State
+  // Helper for today's default date
+  const getTodayDateStr = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Shared Expense Form State
   const [category, setCategory] = useState<Expense['category']>('Detergent & Chemicals');
   const [amount, setAmount] = useState<string>('');
   const [description, setDescription] = useState('');
   const [pieces, setPieces] = useState<string>('1');
-  const [date, setDate] = useState('2026-08-31');
+  const [date, setDate] = useState(getTodayDateStr());
   const [referenceNo, setReferenceNo] = useState('');
   const [recordedBy, setRecordedBy] = useState(currentUser?.name || 'Staff On Duty');
+
+  // Multi-item Batch Table State inside the Form
+  const [pendingItems, setPendingItems] = useState<PendingExpenseItem[]>([]);
+  const descriptionInputRef = useRef<HTMLInputElement>(null);
 
   // Formatted date label helpers
   const formatExpenseDateButtonLabel = (dateStr: string) => {
@@ -200,14 +222,97 @@ export const ExpensesManagement: React.FC = () => {
     }).sort((a, b) => b.total - a.total); // Sort highest spent first
   }, [expenses, totalAllExpenses]);
 
-  // Handlers
-  const handleAddExpenseSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  // Handlers for Batch Table & Quick Expense Entry
+  const handleAddItemToBatch = () => {
     const parsedAmount = parseFloat(amount);
-    if (isNaN(parsedAmount) || parsedAmount <= 0 || !description.trim()) {
+    if (!description.trim()) {
+      descriptionInputRef.current?.focus();
+      return;
+    }
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
       return;
     }
 
+    const parsedPieces = parseInt(pieces, 10);
+    const newItem: PendingExpenseItem = {
+      id: `pending-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      category,
+      description: description.trim(),
+      pieces: isNaN(parsedPieces) || parsedPieces < 1 ? 1 : parsedPieces,
+      amount: parsedAmount
+    };
+
+    setPendingItems(prev => [...prev, newItem]);
+    
+    // Clear inputs and keep focus on description for immediate next entry
+    setDescription('');
+    setAmount('');
+    setPieces('1');
+    setTimeout(() => {
+      descriptionInputRef.current?.focus();
+    }, 50);
+  };
+
+  const handleRemovePendingItem = (id: string) => {
+    setPendingItems(prev => prev.filter(item => item.id !== id));
+  };
+
+  // Save all items from the batch table into the ledger
+  const handleSaveAllToLedger = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+
+    let itemsToSave = [...pendingItems];
+
+    // Check if user currently has an unadded item typed in the inputs
+    const parsedAmount = parseFloat(amount);
+    if (description.trim() && !isNaN(parsedAmount) && parsedAmount > 0) {
+      const parsedPieces = parseInt(pieces, 10);
+      itemsToSave.push({
+        id: `pending-${Date.now()}`,
+        category,
+        description: description.trim(),
+        pieces: isNaN(parsedPieces) || parsedPieces < 1 ? 1 : parsedPieces,
+        amount: parsedAmount
+      });
+    }
+
+    if (itemsToSave.length === 0) {
+      return;
+    }
+
+    const expenseRecords: Omit<Expense, 'id'>[] = itemsToSave.map(item => ({
+      category: item.category,
+      description: item.description,
+      pieces: item.pieces,
+      amount: item.amount,
+      date,
+      recordedBy: recordedBy.trim() || currentUser?.name || 'Staff',
+      referenceNo: referenceNo.trim() || undefined
+    }));
+
+    addMultipleExpenses(expenseRecords);
+
+    // Reset Form
+    setPendingItems([]);
+    setDescription('');
+    setPieces('1');
+    setAmount('');
+    setReferenceNo('');
+    setIsAddExpenseModalOpen(false);
+
+    // Ensure the date table is expanded so user sees all their logged expenses
+    setExpandedDates(prev => ({
+      ...prev,
+      [date]: true
+    }));
+  };
+
+  // Quick save single item and keep form open for the next item
+  const handleSaveAndAddAnother = () => {
+    const parsedAmount = parseFloat(amount);
+    if (!description.trim() || isNaN(parsedAmount) || parsedAmount <= 0) {
+      return;
+    }
     const parsedPieces = parseInt(pieces, 10);
 
     addExpense({
@@ -220,23 +325,16 @@ export const ExpensesManagement: React.FC = () => {
       referenceNo: referenceNo.trim() || undefined
     });
 
-    // Reset Form
     setDescription('');
     setPieces('1');
     setAmount('');
-    setReferenceNo('');
-    setIsAddExpenseModalOpen(false);
-    // Ensure tables remain collapsed when creating new expense until user explicitly clicks the date button
-    setExpandedDates({});
-  };
+    setTimeout(() => {
+      descriptionInputRef.current?.focus();
+    }, 50);
 
-  const handleSendExpense = (targetDate?: string) => {
-    const d = targetDate || expenses[0]?.date || date || '2026-09-01';
-    sendExpenseReportToBoss(d);
-    // Once sent, drop / collapse the table for that date
     setExpandedDates(prev => ({
       ...prev,
-      [d]: false
+      [date]: true
     }));
   };
 
@@ -431,165 +529,333 @@ export const ExpensesManagement: React.FC = () => {
         )}
       </div>
 
-      {/* 5. ADD EXPENSE MODAL */}
+      {/* 5. ADD EXPENSE MODAL WITH TABLE ENTRY */}
       {isAddExpenseModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white w-full max-w-2xl sm:max-w-3xl rounded-2xl shadow-xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
             
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <div className="flex items-center gap-2">
+            {/* Modal Header */}
+            <div className="p-3.5 sm:p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
+              <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold">
                   <Receipt size={16} />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-sm text-slate-900">Record Operational Expense</h3>
-                  <p className="text-[11px] text-slate-500">Log cost disbursement to the store ledger</p>
+                  <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+                    <span>Record Operational Expenses</span>
+                    {pendingItems.length > 0 && (
+                      <span className="text-[10px] font-extrabold bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full border border-rose-200">
+                        {pendingItems.length} queued
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Add multiple expense items into the table below without reopening the form
+                  </p>
                 </div>
               </div>
               <button 
-                onClick={() => setIsAddExpenseModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
+                onClick={() => {
+                  setIsAddExpenseModalOpen(false);
+                  setPendingItems([]);
+                }}
+                className="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                title="Close"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleAddExpenseSubmit} className="p-4 space-y-3.5 overflow-y-auto">
+            {/* Modal Body */}
+            <div className="p-3.5 sm:p-4 space-y-3.5 overflow-y-auto flex-1">
               
-              {/* Category */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Expense Category <span className="text-rose-500">*</span>
-                </label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value as any)}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 font-semibold text-slate-800"
-                >
-                  {EXPENSE_CATEGORIES.map(cat => (
-                    <option key={cat.key} value={cat.key}>
-                      {cat.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Expense Description / Purpose <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Ariel Powder drum restock, Meralco power bill, dryer repair"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 font-medium"
-                />
-              </div>
-
-              {/* Pieces and Amount Grid */}
-              <div className="grid grid-cols-2 gap-3">
-                {/* Pieces */}
+              {/* Batch Metadata Header (Date, Voucher, Staff) */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-200/70 text-xs">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Pieces (Quantity) <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    placeholder="1"
-                    value={pieces}
-                    onChange={(e) => setPieces(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 font-mono font-bold text-slate-900"
-                  />
-                </div>
-
-                {/* Amount (PHP) */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Amount (₱) <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2 text-xs font-mono font-bold text-slate-400">₱</span>
-                    <input
-                      type="number"
-                      min="1"
-                      step="any"
-                      placeholder="0.00"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      required
-                      className="w-full pl-8 pr-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 font-mono font-bold text-slate-900"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                {/* Date */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase tracking-wider">
                     Date of Expense
                   </label>
                   <input
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 font-mono font-medium"
+                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 font-mono font-medium"
                   />
                 </div>
 
-                {/* Reference Receipt No */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Receipt / Voucher #
+                  <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase tracking-wider">
+                    Receipt / Voucher # <span className="text-slate-400 font-normal">(optional)</span>
                   </label>
                   <input
                     type="text"
                     placeholder="e.g. OR-88192"
                     value={referenceNo}
                     onChange={(e) => setReferenceNo(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 font-mono font-medium"
+                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 font-mono font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase tracking-wider">
+                    Recorded By
+                  </label>
+                  <input
+                    type="text"
+                    value={recordedBy}
+                    onChange={(e) => setRecordedBy(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 font-medium"
                   />
                 </div>
               </div>
 
-              {/* Recorded By */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Recorded By (Operator / Staff)
-                </label>
-                <input
-                  type="text"
-                  value={recordedBy}
-                  onChange={(e) => setRecordedBy(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 font-medium"
-                />
+              {/* FAST ADD ENTRY ROW */}
+              <div className="p-3 bg-rose-50/40 rounded-xl border border-rose-200/80 space-y-2">
+                <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                  <span className="flex items-center gap-1.5 text-rose-800">
+                    <PlusCircle size={14} className="text-rose-600" />
+                    <span>Add Expense Line Item</span>
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-normal hidden sm:inline">
+                    Type details and click "+ Add to Table" or hit Enter
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                  {/* Category (sm:col-span-4) */}
+                  <div className="sm:col-span-4">
+                    <label className="block text-[10px] font-bold text-slate-600 mb-0.5 sm:hidden">Category</label>
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value as any)}
+                      className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                    >
+                      {EXPENSE_CATEGORIES.map(cat => (
+                        <option key={cat.key} value={cat.key}>
+                          {cat.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Description / Product (sm:col-span-4) */}
+                  <div className="sm:col-span-4">
+                    <label className="block text-[10px] font-bold text-slate-600 mb-0.5 sm:hidden">Description / Purpose</label>
+                    <input
+                      ref={descriptionInputRef}
+                      type="text"
+                      placeholder="Product / Purpose (e.g. Ariel 1kg)"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddItemToBatch();
+                        }
+                      }}
+                      className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 font-medium"
+                    />
+                  </div>
+
+                  {/* Pcs (sm:col-span-2) */}
+                  <div className="sm:col-span-2">
+                    <label className="block text-[10px] font-bold text-slate-600 mb-0.5 sm:hidden">Pcs</label>
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      placeholder="Qty"
+                      value={pieces}
+                      onChange={(e) => setPieces(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddItemToBatch();
+                        }
+                      }}
+                      className="w-full px-2 py-1.5 text-xs rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 font-mono font-bold text-center"
+                      title="Pieces / Quantity"
+                    />
+                  </div>
+
+                  {/* Amount (sm:col-span-2) */}
+                  <div className="sm:col-span-2">
+                    <label className="block text-[10px] font-bold text-slate-600 mb-0.5 sm:hidden">Amount (₱)</label>
+                    <div className="relative">
+                      <span className="absolute left-2 top-1.5 text-xs font-mono font-bold text-slate-400">₱</span>
+                      <input
+                        type="number"
+                        min="1"
+                        step="any"
+                        placeholder="0.00"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddItemToBatch();
+                          }
+                        }}
+                        className="w-full pl-5 pr-2 py-1.5 text-xs rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 font-mono font-bold text-slate-900 text-right"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-[10px] text-slate-500 italic">
+                    Press <span className="font-bold text-slate-700">Enter</span> to quickly append item to the table
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleAddItemToBatch}
+                      className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg flex items-center gap-1 transition-colors shadow-2xs cursor-pointer active:scale-95"
+                    >
+                      <Plus size={13} />
+                      <span>+ Add to Table</span>
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              {/* Modal Buttons */}
-              <div className="pt-2 flex items-center justify-end gap-2">
+              {/* BATCH TABLE OF EXPENSES */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <Table size={13} className="text-rose-600" />
+                    <span>Queued Expenses Table ({pendingItems.length})</span>
+                  </label>
+                  <span className="text-[11px] text-slate-500 font-medium">
+                    Review or remove items before saving to ledger
+                  </span>
+                </div>
+
+                <div className="border border-slate-200 rounded-xl overflow-hidden shadow-2xs bg-white">
+                  <div className="max-h-48 sm:max-h-56 overflow-y-auto">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead className="bg-slate-100/90 sticky top-0 border-b border-slate-200 text-slate-700 font-bold text-[11px]">
+                        <tr>
+                          <th className="py-2 px-2 text-center w-8">#</th>
+                          <th className="py-2 px-3">Product / Purpose</th>
+                          <th className="py-2 px-2.5">Category</th>
+                          <th className="py-2 px-2 text-center w-14">Pcs</th>
+                          <th className="py-2 px-3 text-right w-24">Amount</th>
+                          <th className="py-2 px-2 text-center w-9"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 bg-white">
+                        {pendingItems.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="py-6 text-center text-slate-400 text-xs">
+                              No expense items queued yet. Fill in the form above and click "+ Add to Table".
+                            </td>
+                          </tr>
+                        ) : (
+                          pendingItems.map((item, index) => (
+                            <tr key={item.id} className="hover:bg-rose-50/30 transition-colors">
+                              <td className="py-2 px-2 text-center font-mono text-slate-400 text-[10px]">
+                                {index + 1}
+                              </td>
+                              <td className="py-2 px-3 font-semibold text-slate-900">
+                                {item.description}
+                              </td>
+                              <td className="py-2 px-2.5">
+                                <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 whitespace-nowrap">
+                                  {item.category}
+                                </span>
+                              </td>
+                              <td className="py-2 px-2 text-center font-mono font-bold text-slate-800">
+                                {item.pieces}
+                              </td>
+                              <td className="py-2 px-3 text-right font-mono font-bold text-rose-700">
+                                ₱{item.amount.toLocaleString()}
+                              </td>
+                              <td className="py-2 px-2 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemovePendingItem(item.id)}
+                                  className="text-slate-300 hover:text-rose-600 p-1 rounded transition-colors cursor-pointer"
+                                  title="Remove from batch"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                      {pendingItems.length > 0 && (
+                        <tfoot className="bg-slate-50 border-t border-slate-200 font-bold text-slate-800">
+                          <tr>
+                            <td colSpan={3} className="py-2 px-3 text-right text-xs uppercase tracking-wider text-slate-600">
+                              Batch Total ({pendingItems.length} items)
+                            </td>
+                            <td className="py-2 px-2 text-center font-mono font-extrabold text-indigo-700 text-xs">
+                              {pendingItems.reduce((sum, i) => sum + i.pieces, 0)}
+                            </td>
+                            <td className="py-2 px-3 text-right font-mono font-extrabold text-rose-700 text-xs">
+                              ₱{pendingItems.reduce((sum, i) => sum + i.amount, 0).toLocaleString()}
+                            </td>
+                            <td></td>
+                          </tr>
+                        </tfoot>
+                      )}
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Modal Footer Controls */}
+            <div className="p-3 sm:p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2.5 bg-slate-50/50 shrink-0">
+              <div className="text-[11px] text-slate-500 font-medium self-start sm:self-center">
+                {pendingItems.length > 0 
+                  ? `${pendingItems.length} item${pendingItems.length > 1 ? 's' : ''} queued • ₱${pendingItems.reduce((s, i) => s + i.amount, 0).toLocaleString()} total`
+                  : 'Add items above to record them into this date'}
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-auto w-full sm:w-auto justify-end">
                 <button
                   type="button"
-                  onClick={() => setIsAddExpenseModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors"
+                  onClick={() => {
+                    setIsAddExpenseModalOpen(false);
+                    setPendingItems([]);
+                  }}
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200/60 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
+
+                {/* Save & Add Another for instant single save */}
                 <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 transition-all shadow-xs flex items-center gap-1.5 active:scale-95"
+                  type="button"
+                  onClick={handleSaveAndAddAnother}
+                  disabled={!description.trim() || !amount || parseFloat(amount) <= 0}
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                  title="Save current item and immediately continue typing"
+                >
+                  <span>Save & Keep Open</span>
+                </button>
+
+                {/* Save All */}
+                <button
+                  type="button"
+                  onClick={handleSaveAllToLedger}
+                  disabled={pendingItems.length === 0 && (!description.trim() || !amount || parseFloat(amount) <= 0)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-xs flex items-center gap-1.5 active:scale-95 cursor-pointer"
                 >
                   <CheckCircle2 size={14} />
-                  <span>Save to Ledger</span>
+                  <span>
+                    {pendingItems.length > 0
+                      ? `Save All to Ledger (${pendingItems.length})`
+                      : 'Save to Ledger'}
+                  </span>
                 </button>
               </div>
+            </div>
 
-            </form>
           </div>
         </div>
       )}

@@ -26,6 +26,14 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
 }) => {
   const getStatusConfig = (st: LaundryStatus) => {
     switch (st) {
+      case 'RECEIVED':
+        return {
+          label: 'Received',
+          bg: 'bg-sky-50 text-sky-900 border-sky-300',
+          dotBg: 'bg-sky-500',
+          icon: Clock,
+          emoji: '📥'
+        };
       case 'WASHING':
         return {
           label: 'Washing & Drying',

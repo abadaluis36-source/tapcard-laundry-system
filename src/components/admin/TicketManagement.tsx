@@ -82,6 +82,7 @@ export const TicketManagement: React.FC<TicketManagementProps> = ({ hideHeader =
 
   const statuses: { key: LaundryStatus | 'ALL'; label: string }[] = [
     { key: 'ALL', label: 'All Tickets' },
+    { key: 'RECEIVED', label: 'Received' },
     { key: 'WASHING', label: 'Washing & Drying' },
     { key: 'FOLDING', label: 'Folding' },
     { key: 'READY', label: 'Ready' },
@@ -91,6 +92,7 @@ export const TicketManagement: React.FC<TicketManagementProps> = ({ hideHeader =
 
   const getDropdownColorClass = (status: LaundryStatus) => {
     switch (status) {
+      case 'RECEIVED': return 'bg-white text-sky-700 border-sky-300 focus:ring-sky-500 hover:bg-sky-50/50';
       case 'WASHING': return 'bg-white text-amber-700 border-amber-300 focus:ring-amber-500 hover:bg-amber-50/50';
       case 'FOLDING': return 'bg-white text-purple-700 border-purple-300 focus:ring-purple-500 hover:bg-purple-50/50';
       case 'READY': return 'bg-white text-emerald-700 border-emerald-300 focus:ring-emerald-500 hover:bg-emerald-50/50';
@@ -270,7 +272,7 @@ export const TicketManagement: React.FC<TicketManagementProps> = ({ hideHeader =
                         <select
                           value={tkt.status}
                           onChange={(e) => handleStatusChange(tkt, e.target.value as LaundryStatus)}
-                          className="text-[11px] py-1 pl-2 pr-6 rounded-lg border border-slate-300 bg-white font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 hover:border-slate-400 cursor-pointer appearance-none shadow-2xs transition-colors"
+                          className={`text-[11px] py-1 pl-2 pr-6 rounded-lg border font-bold focus:outline-none focus:ring-2 appearance-none shadow-2xs transition-colors cursor-pointer ${getDropdownColorClass(tkt.status)}`}
                           style={{
                             backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23475569' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.75' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
                             backgroundPosition: `right 0.25rem center`,
@@ -278,6 +280,7 @@ export const TicketManagement: React.FC<TicketManagementProps> = ({ hideHeader =
                             backgroundSize: `1.25em 1.25em`
                           }}
                         >
+                          <option value="RECEIVED">📥 RECEIVED</option>
                           <option value="WASHING">🟡 WASHING &amp; DRYING</option>
                           <option value="FOLDING">🟣 FOLDING</option>
                           <option value="READY">🟢 READY</option>
@@ -381,7 +384,7 @@ export const TicketManagement: React.FC<TicketManagementProps> = ({ hideHeader =
                   <select
                     value={tkt.status}
                     onChange={(e) => handleStatusChange(tkt, e.target.value as LaundryStatus)}
-                    className="text-[11px] py-1 pl-2 pr-6 rounded-lg border border-slate-300 bg-white font-bold text-slate-800 flex-1 focus:outline-none focus:ring-2 focus:ring-slate-400 hover:border-slate-400 cursor-pointer truncate appearance-none shadow-2xs transition-colors"
+                    className={`text-[11px] py-1 pl-2 pr-6 rounded-lg border font-bold flex-1 focus:outline-none focus:ring-2 appearance-none shadow-2xs transition-colors cursor-pointer truncate ${getDropdownColorClass(tkt.status)}`}
                     style={{
                       backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23475569' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.75' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
                       backgroundPosition: `right 0.25rem center`,
@@ -389,6 +392,7 @@ export const TicketManagement: React.FC<TicketManagementProps> = ({ hideHeader =
                       backgroundSize: `1.25em 1.25em`
                     }}
                   >
+                    <option value="RECEIVED">📥 Received</option>
                     <option value="WASHING">🟡 Washing &amp; Drying</option>
                     <option value="FOLDING">🟣 Folding</option>
                     <option value="READY">🟢 Ready</option>

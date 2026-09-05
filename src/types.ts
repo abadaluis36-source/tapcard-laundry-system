@@ -1,4 +1,5 @@
 export type LaundryStatus = 
+  | 'RECEIVED'
   | 'WASHING'
   | 'FOLDING'
   | 'READY'

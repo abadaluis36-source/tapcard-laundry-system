@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useLaundry } from '../../context/LaundryContext';
 import { PaymentBadge } from '../common/StatusBadge';
 import { PaymentTransaction, Ticket } from '../../types';
@@ -69,6 +69,33 @@ export const PaymentsLedger: React.FC = () => {
     return dateStr.trim().substring(0, 10);
   };
 
+  // Helper to extract hour and minute from date string
+  const extractHourAndMinute = (dateStr: string): { hour: number; minute: number } | null => {
+    if (!dateStr) return null;
+    const timeMatch = dateStr.match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?/i);
+    if (timeMatch) {
+      let hour = parseInt(timeMatch[1], 10);
+      const minute = parseInt(timeMatch[2], 10);
+      const ampm = timeMatch[3] ? timeMatch[3].toUpperCase() : null;
+      if (ampm === 'PM' && hour < 12) hour += 12;
+      if (ampm === 'AM' && hour === 12) hour = 0;
+      return { hour, minute };
+    }
+    const parsed = new Date(dateStr);
+    if (!isNaN(parsed.getTime())) {
+      return { hour: parsed.getHours(), minute: parsed.getMinutes() };
+    }
+    return null;
+  };
+
+  // Check if transaction was recorded during daily operational shift (7:00 AM to 10:00 PM)
+  const isWithin7AmTo10Pm = (dateStr: string): boolean => {
+    const time = extractHourAndMinute(dateStr);
+    if (!time) return true; // default to true if timestamp has no explicit time
+    const totalMinutes = time.hour * 60 + time.minute;
+    return totalMinutes >= 7 * 60 && totalMinutes <= 22 * 60;
+  };
+
   // Helper to format button label e.g. "Payment Aug 31"
   const formatPaymentDateButtonLabel = (dateStr: string) => {
     try {
@@ -95,12 +122,17 @@ export const PaymentsLedger: React.FC = () => {
     let outstandingTotal = 0;
     let totalSales = 0;
 
-    // Sum every ticket created in the system
+    // Tickets summary: in-progress orders only count paid amounts;
+    // completed orders count toward total sales and outstanding receivables if unpaid.
     tickets.forEach(t => {
-      totalSales += (t.totalAmount || 0);
       paidTotal += (t.amountPaid || 0);
-      if (t.totalAmount > (t.amountPaid || 0)) {
-        outstandingTotal += (t.totalAmount - (t.amountPaid || 0));
+      if (t.status === 'COMPLETED') {
+        totalSales += (t.totalAmount || 0);
+        if (t.totalAmount > (t.amountPaid || 0)) {
+          outstandingTotal += (t.totalAmount - (t.amountPaid || 0));
+        }
+      } else {
+        totalSales += (t.amountPaid || 0);
       }
     });
 
@@ -109,9 +141,9 @@ export const PaymentsLedger: React.FC = () => {
       paidTotal,
       outstandingTotal
     };
-  }, [tickets, payments]);
+  }, [tickets]);
 
-  // Combine payments and unpaid ticket receivables
+  // Combine payments and completed unpaid ticket receivables
   const allLedgerItems = useMemo<DisplayLedgerItem[]>(() => {
     const list: DisplayLedgerItem[] = [];
 
@@ -131,22 +163,28 @@ export const PaymentsLedger: React.FC = () => {
       });
     });
 
-    // 2. Add unpaid / partial ticket balances as receivables if they don't have corresponding payments
+    // 2. Unpaid tickets will NOT go to payments automatically — they ONLY go when the order is COMPLETED!
     tickets.forEach(t => {
-      const unpaidBalance = t.totalAmount - t.amountPaid;
-      if (t.paymentStatus === 'UNPAID' || (t.paymentStatus === 'PARTIAL' && unpaidBalance > 0)) {
-        list.push({
-          id: `unpaid-${t.id}`,
-          date: t.createdAt,
-          ticketId: t.id,
-          ticketNumber: t.ticketNumber,
-          customerName: t.customerName,
-          amount: unpaidBalance,
-          paymentStatus: t.paymentStatus,
-          paymentMethod: t.paymentMethod || 'CASH',
-          notes: `Pending collection at pickup (₱${unpaidBalance} due)`,
-          isReceivable: true
-        });
+      if (t.status === 'COMPLETED') {
+        const unpaidBalance = t.totalAmount - (t.amountPaid || 0);
+        if (t.paymentStatus === 'UNPAID' || (t.paymentStatus === 'PARTIAL' && unpaidBalance > 0)) {
+          // Check if there is already a full payment recorded for this ticket
+          const hasFullPayment = payments.some(p => p.ticketId === t.id && p.amount >= t.totalAmount);
+          if (!hasFullPayment) {
+            list.push({
+              id: `unpaid-${t.id}`,
+              date: t.completedAt || t.createdAt,
+              ticketId: t.id,
+              ticketNumber: t.ticketNumber,
+              customerName: t.customerName,
+              amount: unpaidBalance,
+              paymentStatus: t.paymentStatus,
+              paymentMethod: t.paymentMethod || 'CASH',
+              notes: `Completed order balance (${t.paymentStatus.toLowerCase()} upon pickup)`,
+              isReceivable: true
+            });
+          }
+        }
       }
     });
 
@@ -204,30 +242,68 @@ export const PaymentsLedger: React.FC = () => {
     });
   }, [filteredLedgerItems]);
 
-  const totalFilteredAmount = useMemo(() => {
-    return filteredLedgerItems.reduce((acc, p) => acc + p.amount, 0);
-  }, [filteredLedgerItems]);
+  // Real-time clock state to support automatic reset after 11:00 PM
+  const [currentTime, setCurrentTime] = useState<Date>(() => new Date());
 
-  const totalCashOnHand = useMemo(() => {
-    return filteredLedgerItems
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 15000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const currentHour = currentTime.getHours();
+  // Automatic reset after 11:00 PM (23:00) until 6:59 AM next morning
+  const isResetToZero = currentHour >= 23 || currentHour < 7;
+
+  // Determine current active operating date:
+  // Use today's date if transactions exist for today, else fallback to latest date in ledger
+  const todayKey = extractDateKey(currentTime.toISOString());
+  const hasTodayTransactions = allLedgerItems.some(item => extractDateKey(item.date) === todayKey);
+  const activeDailyDateKey = hasTodayTransactions 
+    ? todayKey 
+    : (groupedPaymentsByDate[0]?.date || todayKey);
+
+  // Filter transactions belonging to the active day within 7:00 AM – 10:00 PM (actual collections only)
+  const dailyShiftTransactions = useMemo(() => {
+    return allLedgerItems.filter(item => {
+      // Exclude unpaid balances from collected cash metrics
+      if (item.isReceivable && item.paymentStatus === 'UNPAID') return false;
+      const itemDateKey = extractDateKey(item.date);
+      if (itemDateKey !== activeDailyDateKey) return false;
+      return isWithin7AmTo10Pm(item.date);
+    });
+  }, [allLedgerItems, activeDailyDateKey]);
+
+  // Daily KPI Metrics (7 AM to 10 PM, auto reset to 0 after 11 PM)
+  const dailyTotalCollections = useMemo(() => {
+    if (isResetToZero) return 0;
+    return dailyShiftTransactions.reduce((acc, p) => acc + p.amount, 0);
+  }, [isResetToZero, dailyShiftTransactions]);
+
+  const dailyCashOnHand = useMemo(() => {
+    if (isResetToZero) return 0;
+    return dailyShiftTransactions
       .filter(p => p.paymentMethod === 'CASH')
       .reduce((acc, p) => acc + p.amount, 0);
-  }, [filteredLedgerItems]);
+  }, [isResetToZero, dailyShiftTransactions]);
 
-  const totalGCashRevenue = useMemo(() => {
-    return filteredLedgerItems
+  const dailyGCashRevenue = useMemo(() => {
+    if (isResetToZero) return 0;
+    return dailyShiftTransactions
       .filter(p => p.paymentMethod === 'GCASH')
       .reduce((acc, p) => acc + p.amount, 0);
-  }, [filteredLedgerItems]);
+  }, [isResetToZero, dailyShiftTransactions]);
 
   const totalOtherDigital = useMemo(() => {
-    return filteredLedgerItems
+    if (isResetToZero) return 0;
+    return dailyShiftTransactions
       .filter(p => p.paymentMethod !== 'CASH' && p.paymentMethod !== 'GCASH')
       .reduce((acc, p) => acc + p.amount, 0);
-  }, [filteredLedgerItems]);
+  }, [isResetToZero, dailyShiftTransactions]);
 
   return (
-    <div id="payments-ledger-view" className="space-y-5">
+    <div id="payments-ledger-view" className="space-y-4">
       
       {/* Header */}
       <div>
@@ -252,8 +328,8 @@ export const PaymentsLedger: React.FC = () => {
             </div>
           </div>
           <div className="mt-1">
-            <span className="text-xl sm:text-2xl font-black font-mono text-slate-900">
-              ₱{totalFilteredAmount.toLocaleString()}
+            <span className={`text-xl sm:text-2xl font-black font-mono ${isResetToZero ? 'text-slate-400' : 'text-slate-900'}`}>
+              ₱{dailyTotalCollections.toLocaleString()}
             </span>
           </div>
         </div>
@@ -269,8 +345,8 @@ export const PaymentsLedger: React.FC = () => {
             </div>
           </div>
           <div className="mt-1">
-            <span className="text-xl sm:text-2xl font-black font-mono text-emerald-700">
-              ₱{totalCashOnHand.toLocaleString()}
+            <span className={`text-xl sm:text-2xl font-black font-mono ${isResetToZero ? 'text-slate-400' : 'text-emerald-700'}`}>
+              ₱{dailyCashOnHand.toLocaleString()}
             </span>
           </div>
         </div>
@@ -286,8 +362,8 @@ export const PaymentsLedger: React.FC = () => {
             </div>
           </div>
           <div className="mt-1">
-            <span className="text-xl sm:text-2xl font-black font-mono text-blue-700">
-              ₱{totalGCashRevenue.toLocaleString()}
+            <span className={`text-xl sm:text-2xl font-black font-mono ${isResetToZero ? 'text-slate-400' : 'text-blue-700'}`}>
+              ₱{dailyGCashRevenue.toLocaleString()}
             </span>
           </div>
         </div>
@@ -470,19 +546,27 @@ export const PaymentsLedger: React.FC = () => {
             })}
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-slate-300 p-8 text-center text-slate-500 space-y-2">
-            <p className="font-bold text-xs">No payment records found for "{paymentFilter}"</p>
-            <p className="text-[11px] text-slate-400">Try resetting the filter to All Records or adjusting your search.</p>
-            <button
-              type="button"
-              onClick={() => {
-                setPaymentFilter('ALL');
-                setSearchQuery('');
-              }}
-              className="px-3 py-1.5 text-xs font-bold bg-slate-900 text-white rounded-lg cursor-pointer mt-2"
-            >
-              Reset to All Records
-            </button>
+          <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-500 space-y-2">
+            <p className="font-bold text-xs text-slate-700">
+              {allLedgerItems.length === 0 ? 'No payment transactions recorded yet' : `No payment records found for "${paymentFilter}"`}
+            </p>
+            <p className="text-[11px] text-slate-400">
+              {allLedgerItems.length === 0 
+                ? 'Payments recorded during ticket creation or customer claim settlement will appear here.' 
+                : 'Try resetting the filter to All Records or adjusting your search.'}
+            </p>
+            {allLedgerItems.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setPaymentFilter('ALL');
+                  setSearchQuery('');
+                }}
+                className="px-3 py-1.5 text-xs font-bold bg-slate-900 text-white rounded-lg cursor-pointer mt-2"
+              >
+                Reset to All Records
+              </button>
+            )}
           </div>
         )}
       </div>

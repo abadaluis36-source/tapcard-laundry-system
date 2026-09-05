@@ -38,7 +38,7 @@ export const CreateTicketView: React.FC<CreateTicketProps> = ({ isModal = false,
   const weightSectionRef = useRef<HTMLDivElement>(null);
 
   // Form states
-  const [customerMode, setCustomerMode] = useState<'existing' | 'new'>('existing');
+  const [customerMode, setCustomerMode] = useState<'existing' | 'new'>(customers.length > 0 ? 'existing' : 'new');
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>(customers[0]?.id || '');
   const [newCustomerName, setNewCustomerName] = useState('');
   const [newCustomerPhone, setNewCustomerPhone] = useState('');
@@ -55,8 +55,6 @@ export const CreateTicketView: React.FC<CreateTicketProps> = ({ isModal = false,
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('PAID');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
   const [amountPaidCustom, setAmountPaidCustom] = useState<number | null>(null);
-  const [detergent, setDetergent] = useState('Ariel Professional Powder');
-  const [fragrance, setFragrance] = useState('Downy Mystique');
   const [generalNotes, setGeneralNotes] = useState('');
   const [extraDetergentScoops, setExtraDetergentScoops] = useState<number>(0);
   const [extraFabConPacks, setExtraFabConPacks] = useState<number>(0);
@@ -208,14 +206,14 @@ export const CreateTicketView: React.FC<CreateTicketProps> = ({ isModal = false,
       amountPaid: currentAmountPaid,
       paymentStatus,
       paymentMethod,
-      status: 'WASHING',
+      status: 'RECEIVED',
       notes: [
         generalNotes,
         extraDetergentScoops > 0 ? `+${extraDetergentScoops} Extra Detergent Scoop` : '',
         extraFabConPacks > 0 ? `+${extraFabConPacks} Extra FabCon Sachet` : ''
       ].filter(Boolean).join(' | '),
-      detergentOption: extraDetergentScoops > 0 ? `${detergent} (+${extraDetergentScoops} scoop)` : detergent,
-      fragranceOption: extraFabConPacks > 0 ? `${fragrance} (+${extraFabConPacks} sachet)` : fragrance,
+      detergentOption: extraDetergentScoops > 0 ? `+${extraDetergentScoops} extra scoop` : undefined,
+      fragranceOption: extraFabConPacks > 0 ? `+${extraFabConPacks} extra sachet` : undefined,
       estimatedReadyAt: 'Today, 5:00 PM',
       staffName: 'Arlene Santos'
     });
@@ -312,25 +310,38 @@ export const CreateTicketView: React.FC<CreateTicketProps> = ({ isModal = false,
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-36 overflow-y-auto p-1">
-                {filteredCustomers.map((cust) => (
-                  <div
-                    key={cust.id}
-                    onClick={() => setSelectedCustomerId(cust.id)}
-                    className={`p-2.5 rounded-xl border text-xs cursor-pointer transition-all flex items-center justify-between ${
-                      selectedCustomerId === cust.id
-                        ? 'border-emerald-600 bg-emerald-50/70 text-emerald-950 font-bold'
-                        : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'
-                    }`}
-                  >
-                    <div>
-                      <span className="block font-bold">{cust.name}</span>
-                      <span className="text-[11px] text-slate-500">{cust.phone}</span>
-                    </div>
-                    {selectedCustomerId === cust.id && (
-                      <Check size={16} className="text-emerald-600" />
-                    )}
+                {filteredCustomers.length === 0 ? (
+                  <div className="col-span-full py-4 text-center text-xs text-slate-500 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                    <p className="font-semibold text-slate-700">No existing customers found</p>
+                    <button
+                      type="button"
+                      onClick={() => setCustomerMode('new')}
+                      className="mt-2 px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                    >
+                      + Register New Customer
+                    </button>
                   </div>
-                ))}
+                ) : (
+                  filteredCustomers.map((cust) => (
+                    <div
+                      key={cust.id}
+                      onClick={() => setSelectedCustomerId(cust.id)}
+                      className={`p-2.5 rounded-xl border text-xs cursor-pointer transition-all flex items-center justify-between ${
+                        selectedCustomerId === cust.id
+                          ? 'border-emerald-600 bg-emerald-50/70 text-emerald-950 font-bold'
+                          : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'
+                      }`}
+                    >
+                      <div>
+                        <span className="block font-bold">{cust.name}</span>
+                        <span className="text-[11px] text-slate-500">{cust.phone}</span>
+                      </div>
+                      {selectedCustomerId === cust.id && (
+                        <Check size={16} className="text-emerald-600" />
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           ) : (
@@ -509,40 +520,8 @@ export const CreateTicketView: React.FC<CreateTicketProps> = ({ isModal = false,
           )}
         </div>
 
-        {/* 3. Detergent, Fragrance & Add-on Supplies */}
+        {/* 3. Add-on Supplies */}
         <div className="space-y-3 pt-3 border-t border-slate-100">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="text-[11px] font-bold text-slate-700 block mb-1">Detergent Choice</label>
-              <select
-                value={detergent}
-                onChange={(e) => setDetergent(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none font-medium"
-              >
-                <option value="Ariel Professional Powder">Ariel Professional Powder</option>
-                <option value="Breeze Power Clean">Breeze Power Clean</option>
-                <option value="Tide Concentrated Liquid">Tide Concentrated Liquid</option>
-                <option value="Perwoll Delicate Care">Perwoll Delicate Care</option>
-                <option value="Cycles Baby Safe Mild">Cycles Baby Safe (Hypoallergenic)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="text-[11px] font-bold text-slate-700 block mb-1">Fabric Conditioner</label>
-              <select
-                value={fragrance}
-                onChange={(e) => setFragrance(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none font-medium"
-              >
-                <option value="Downy Mystique">Downy Mystique (Black)</option>
-                <option value="Downy Floral Breeze">Downy Floral Breeze</option>
-                <option value="Downy Sunrise Fresh">Downy Sunrise Fresh (Blue)</option>
-                <option value="Comfort Ultra Soft">Comfort Ultra Soft</option>
-                <option value="No Conditioner (Unscented)">No Conditioner (Unscented)</option>
-              </select>
-            </div>
-          </div>
-
           {/* Add-ons Buttons for Detergent & Fabric Conditioner */}
           <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
             <div className="flex items-center justify-between">
@@ -629,20 +608,32 @@ export const CreateTicketView: React.FC<CreateTicketProps> = ({ isModal = false,
               {(['PAID', 'UNPAID'] as PaymentStatus[]).map((st) => (
                 <button
                   key={st}
+                  id={`create-ticket-payment-${st.toLowerCase()}-btn`}
                   type="button"
                   onClick={() => setPaymentStatus(st)}
-                  className={`py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                  className={`py-2 px-2 text-xs font-bold rounded-xl border transition-all cursor-pointer flex flex-col sm:flex-row items-center justify-center gap-1 ${
                     paymentStatus === st
                       ? st === 'PAID'
                         ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
                         : 'bg-rose-600 text-white border-rose-600 shadow-xs'
-                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:border-slate-300'
                   }`}
                 >
-                  {st}
+                  <span>{st}</span>
+                  <span className={`text-[10px] font-medium ${paymentStatus === st ? 'text-white/80' : 'text-slate-400'}`}>
+                    {st === 'PAID' ? '(Immediate)' : '(On Pickup)'}
+                  </span>
                 </button>
               ))}
             </div>
+
+            {/* Explanatory note when UNPAID is selected */}
+            {paymentStatus === 'UNPAID' && (
+              <div className="mt-2 p-2 rounded-lg bg-amber-50/90 border border-amber-200 flex items-center gap-2 text-[11px] text-amber-900 animate-in fade-in duration-150">
+                <Clock size={13} className="shrink-0 text-amber-600" />
+                <span>Pay on Pickup: This order will not go to Payments until marked <strong>Completed</strong>.</span>
+              </div>
+            )}
 
             {/* Payment Method Selector - Only displayed when PAID */}
             {paymentStatus === 'PAID' && (

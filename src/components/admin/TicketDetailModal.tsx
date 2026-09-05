@@ -5,6 +5,7 @@ import { StatusBadge, PaymentBadge } from '../common/StatusBadge';
 import { 
   X, 
   Printer, 
+  Inbox,
   RotateCw, 
   Wind, 
   Layers, 
@@ -50,6 +51,7 @@ export const TicketDetailModal: React.FC = () => {
   const ticket = activeDetailTicket;
 
   const STAGES: { status: LaundryStatus; label: string; icon: any; color: string; desc: string }[] = [
+    { status: 'RECEIVED', label: 'ORDER RECEIVED', icon: Inbox, color: 'blue', desc: 'Order logged & queued' },
     { status: 'WASHING', label: 'WASHING & DRYING', icon: RotateCw, color: 'amber', desc: 'In washing & drying machine' },
     { status: 'FOLDING', label: 'FOLDING', icon: Layers, color: 'purple', desc: 'Steam press & folding' },
     { status: 'READY', label: 'READY FOR PICKUP', icon: Sparkles, color: 'emerald', desc: 'Bagged on rack' },
@@ -58,10 +60,11 @@ export const TicketDetailModal: React.FC = () => {
 
   const getStageIndex = (st: LaundryStatus) => {
     switch (st) {
-      case 'WASHING': return 0;
-      case 'FOLDING': return 1;
-      case 'READY': return 2;
-      case 'COMPLETED': return 3;
+      case 'RECEIVED': return 0;
+      case 'WASHING': return 1;
+      case 'FOLDING': return 2;
+      case 'READY': return 3;
+      case 'COMPLETED': return 4;
       default: return 0;
     }
   };
