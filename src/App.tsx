@@ -35,6 +35,8 @@ import { PaymentSettlementModal } from './components/common/PaymentSettlementMod
 import { ToastContainer } from './components/common/Toast';
 import { Lock, LogOut, ShieldAlert } from 'lucide-react';
 
+import { DBContextSync } from './components/DBContextSync';
+
 const AppContent: React.FC = () => {
   const { role, setRole, adminTab, ownerTab, currentUser, logout, setIsAuthModalOpen, setAuthModalTargetRole } = useLaundry();
 
@@ -181,6 +183,7 @@ const AppContent: React.FC = () => {
 export default function App() {
   return (
     <LaundryProvider>
+      <DBContextSync />
       <AppContent />
     </LaundryProvider>
   );

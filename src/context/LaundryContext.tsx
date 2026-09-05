@@ -50,13 +50,19 @@ interface LaundryContextType {
   setAuthModalTargetRole: (role: 'ADMIN' | 'OWNER') => void;
 
   tickets: Ticket[];
+  setTickets: React.Dispatch<React.SetStateAction<Ticket[]>>;
   customers: Customer[];
+  setCustomers: React.Dispatch<React.SetStateAction<Customer[]>>;
   services: ServicePricing[];
+  setServices: React.Dispatch<React.SetStateAction<ServicePricing[]>>;
   expenses: Expense[];
+  setExpenses: React.Dispatch<React.SetStateAction<Expense[]>>;
   expenseSubmissions: Record<string, ExpenseSubmission>;
   revenueSubmissions: Record<string, ExpenseSubmission>;
   inventory: InventoryItem[];
+  setInventory: React.Dispatch<React.SetStateAction<InventoryItem[]>>;
   payments: PaymentTransaction[];
+  setPayments: React.Dispatch<React.SetStateAction<PaymentTransaction[]>>;
   toasts: ToastNotification[];
   storeProfile: StoreProfile;
   updateStoreProfile: (updatedData: Partial<StoreProfile>) => void;
@@ -1121,13 +1127,19 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         authModalTargetRole,
         setAuthModalTargetRole,
         tickets,
+        setTickets,
         customers,
+        setCustomers,
         services,
+        setServices,
         expenses,
+        setExpenses,
         expenseSubmissions,
         revenueSubmissions,
         inventory,
+        setInventory,
         payments,
+        setPayments,
         toasts,
         customerSearchQuery,
         setCustomerSearchQuery,
