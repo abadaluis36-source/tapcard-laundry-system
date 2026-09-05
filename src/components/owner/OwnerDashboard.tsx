@@ -54,9 +54,13 @@ export const OwnerDashboard: React.FC = () => {
     addToast 
   } = useLaundry();
 
-  const [timeRange, setTimeRange] = useState<'weekly' | 'monthly'>('weekly');
+  const [timeRange, setTimeRange] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().substring(0, 10));
-  const yAxisDomain = useMemo(() => timeRange === 'weekly' ? [0, 8000] : [1000, 30000], [timeRange]);
+  const yAxisDomain = useMemo(() => {
+    if (timeRange === 'daily') return [0, 8000];
+    if (timeRange === 'weekly') return [0, 20000];
+    return [1000, 30000];
+  }, [timeRange]);
 
   const revenueOnSelectedDate = useMemo(() => {
     return payments
@@ -153,7 +157,9 @@ export const OwnerDashboard: React.FC = () => {
   // 2. DYNAMIC REVENUE & PROFIT TRENDS
   // ==========================================
   const trendData = useMemo(() => {
-    if (timeRange === 'weekly') {
+    const pad = (n: number) => String(n).padStart(2, '0');
+
+    if (timeRange === 'daily') {
       const today = new Date();
       const dayOfWeek = today.getDay(); // 0 is Sun, 1 is Mon, ... 6 is Sat
       const distToMonday = (dayOfWeek + 6) % 7;
@@ -164,7 +170,7 @@ export const OwnerDashboard: React.FC = () => {
       const weekDays = Array.from({ length: 7 }, (_, i) => {
         const d = new Date(monday);
         d.setDate(monday.getDate() + i);
-        return d.toISOString().substring(0, 10);
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
       });
 
       const dateMap = new Map<string, { revenue: number; expenses: number }>();
@@ -186,13 +192,60 @@ export const OwnerDashboard: React.FC = () => {
 
       return weekDays.map(dateKey => {
         const values = dateMap.get(dateKey)!;
-        const dObj = new Date(dateKey + 'T00:00:00');
+        const [y, m, d] = dateKey.split('-');
+        const dObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
         // Format label as Mon, Tue, Wed, Thu, Fri, Sat, Sun
         const label = dObj.toLocaleDateString('en-US', { weekday: 'short' });
 
         return {
           label,
           fullDate: dateKey,
+          revenue: values.revenue,
+          expenses: values.expenses,
+          net: values.revenue - values.expenses
+        };
+      });
+    } else if (timeRange === 'weekly') {
+      const last4Weeks = Array.from({ length: 4 }, (_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - (3 - i) * 7);
+        const dist = (d.getDay() + 6) % 7;
+        d.setDate(d.getDate() - dist);
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      });
+
+      const weekMap = new Map<string, { revenue: number; expenses: number }>();
+      last4Weeks.forEach(w => weekMap.set(w, { revenue: 0, expenses: 0 }));
+
+      const getWeekMonday = (dateStr: string) => {
+        const [y, m, d] = dateStr.split('-');
+        const dt = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+        const dist = (dt.getDay() + 6) % 7;
+        dt.setDate(dt.getDate() - dist);
+        return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
+      };
+
+      payments.forEach(p => {
+        const d = p.date ? p.date.substring(0, 10) : '';
+        if (d) {
+          const wKey = getWeekMonday(d);
+          if (weekMap.has(wKey)) weekMap.get(wKey)!.revenue += p.amount;
+        }
+      });
+
+      expenses.forEach(e => {
+        const d = e.date ? e.date.substring(0, 10) : '';
+        if (d) {
+          const wKey = getWeekMonday(d);
+          if (weekMap.has(wKey)) weekMap.get(wKey)!.expenses += e.amount;
+        }
+      });
+
+      return last4Weeks.map((wKey, idx) => {
+        const values = weekMap.get(wKey)!;
+        return {
+          label: `Week ${idx + 1}`,
+          fullDate: wKey,
           revenue: values.revenue,
           expenses: values.expenses,
           net: values.revenue - values.expenses

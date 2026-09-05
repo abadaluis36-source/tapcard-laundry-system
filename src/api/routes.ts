@@ -120,6 +120,10 @@ router.post('/users', async (req, res) => {
 
 // --- Sync Load ---
 router.get('/sync-load', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  
   try {
     const allTickets = await db.select().from(schema.tickets);
     const allCustomers = await db.select().from(schema.customers);

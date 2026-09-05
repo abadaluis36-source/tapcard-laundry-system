@@ -4,8 +4,8 @@ import { io, Socket } from 'socket.io-client';
 
 export const DBContextSync: React.FC = () => {
   const { 
-    tickets, customers, expenses, payments, services, inventory,
-    setTickets, setCustomers, setExpenses, setPayments, setServices, setInventory
+    tickets, customers, expenses, payments, services, inventory, authUsers, storeProfile,
+    setTickets, setCustomers, setExpenses, setPayments, setServices, setInventory, setAuthUsers, updateStoreProfile
   } = useLaundry();
   const isInitialLoad = useRef(true);
   const [loaded, setLoaded] = useState(false);
@@ -13,8 +13,8 @@ export const DBContextSync: React.FC = () => {
   const isRemoteUpdate = useRef(false);
 
   useEffect(() => {
-    // Initial load from DB
-    fetch('/api/sync-load')
+    // Initial load from DB with cache-busting
+    fetch(`/api/sync-load?_t=${Date.now()}`)
       .then(r => r.json())
       .then(data => {
         if (data.tickets && data.tickets.length > 0) {
@@ -54,6 +54,23 @@ export const DBContextSync: React.FC = () => {
             ...i,
             costPerUnit: parseFloat(i.costPerUnit)
           })));
+        }
+        if (data.users && data.users.length > 0) {
+          setAuthUsers(data.users);
+        }
+        if (data.settings && data.settings.length > 0) {
+          // Find the main store profile setting (id: 'store_profile')
+          const profile = data.settings.find((s: any) => s.id === 'store_profile' || !s.id.startsWith('other_'));
+          if (profile) {
+             updateStoreProfile({
+               shopName: profile.shopName,
+               ownerName: profile.ownerName,
+               tagline: profile.tagline,
+               phone: profile.phone,
+               address: profile.address,
+               operatingHours: profile.operatingHours,
+             });
+          }
         }
         setLoaded(true);
         isInitialLoad.current = false;
@@ -109,6 +126,22 @@ export const DBContextSync: React.FC = () => {
           costPerUnit: parseFloat(i.costPerUnit || 0)
         })));
       }
+      if (data.users && data.users.length > 0) {
+        setAuthUsers(data.users);
+      }
+      if (data.settings && data.settings.length > 0) {
+        const profile = data.settings.find((s: any) => s.id === 'store_profile' || !s.id.startsWith('other_'));
+        if (profile) {
+           updateStoreProfile({
+             shopName: profile.shopName,
+             ownerName: profile.ownerName,
+             tagline: profile.tagline,
+             phone: profile.phone,
+             address: profile.address,
+             operatingHours: profile.operatingHours,
+           });
+        }
+      }
       
       // Clear flag after a delay so the next useEffect doesn't push this back to the server
       setTimeout(() => {
@@ -127,20 +160,21 @@ export const DBContextSync: React.FC = () => {
     
     // Sync to DB on any change
     const syncTimeout = setTimeout(() => {
+      const payload = { tickets, customers, expenses, payments, services, inventory, users: authUsers, settings: [{ id: 'store_profile', ...storeProfile }] };
       if (socketRef.current && socketRef.current.connected) {
-        socketRef.current.emit('push-update', { tickets, customers, expenses, payments, services, inventory });
+        socketRef.current.emit('push-update', payload);
       } else {
         // Fallback if socket is down
         fetch('/api/sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tickets, customers, expenses, payments, services, inventory })
+          body: JSON.stringify(payload)
         }).catch(console.error);
       }
     }, 1000); // Debounce sync by 1 second
     
     return () => clearTimeout(syncTimeout);
-  }, [tickets, customers, expenses, payments, services, inventory, loaded]);
+  }, [tickets, customers, expenses, payments, services, inventory, authUsers, storeProfile, loaded]);
 
   return null;
 }

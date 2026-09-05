@@ -38,6 +38,7 @@ interface LaundryContextType {
   // Authentication
   currentUser: AuthUser | null;
   authUsers: AuthUser[];
+  setAuthUsers: React.Dispatch<React.SetStateAction<AuthUser[]>>;
   addStaff: (staffData: Omit<AuthUser, 'id'>) => void;
   updateStaff: (id: string, updatedData: Partial<AuthUser>) => void;
   deleteStaff: (id: string) => void;
@@ -163,7 +164,7 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } catch {
       // fallback
     }
-    return AUTH_USERS[0]; // Arlene Santos (Admin)
+    return null; // Require login by default
   });
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
@@ -1116,6 +1117,7 @@ export const LaundryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setOwnerTab,
         currentUser,
         authUsers,
+        setAuthUsers,
         addStaff,
         updateStaff,
         deleteStaff,

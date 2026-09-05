@@ -3,7 +3,7 @@ import * as schema from './schema.js';
 import { sql } from 'drizzle-orm';
 
 export async function processSyncPayload(payload: any) {
-  const { tickets, customers, expenses, payments, services, inventory } = payload;
+  const { tickets, customers, expenses, payments, services, inventory, users, settings } = payload;
   
   if (tickets && tickets.length > 0) {
     await db.insert(schema.tickets).values(tickets).onConflictDoUpdate({
@@ -59,6 +59,52 @@ export async function processSyncPayload(payload: any) {
         status: sql`EXCLUDED.status`,
         lastRestocked: sql`EXCLUDED.last_restocked`,
         costPerUnit: sql`EXCLUDED.cost_per_unit`,
+      }
+    });
+  }
+
+  if (users && users.length > 0) {
+    const safeUsers = users.map((u: any) => ({
+      id: u.id,
+      name: u.name,
+      username: u.username || null,
+      email: u.email || `${u.username || u.id}@tapcard.local`,
+      role: u.role,
+      staffCode: u.staffCode || 'STAFF',
+      title: u.title || 'Staff',
+      pin: u.pin || u.password || '1234',
+      branch: u.branch || 'Main',
+      avatarUrl: u.avatarUrl || null,
+      shift: u.shift || null,
+      status: u.status || 'ACTIVE'
+    }));
+    await db.insert(schema.users).values(safeUsers).onConflictDoUpdate({
+      target: schema.users.id,
+      set: {
+        name: sql`EXCLUDED.name`,
+        username: sql`EXCLUDED.username`,
+        pin: sql`EXCLUDED.pin`,
+        role: sql`EXCLUDED.role`,
+        status: sql`EXCLUDED.status`,
+        branch: sql`EXCLUDED.branch`,
+        shift: sql`EXCLUDED.shift`,
+        avatarUrl: sql`EXCLUDED.avatar_url`,
+        staffCode: sql`EXCLUDED.staff_code`,
+        title: sql`EXCLUDED.title`,
+        email: sql`EXCLUDED.email`
+      }
+    });
+  }
+
+  if (settings && settings.length > 0) {
+    const safeSettings = settings.map((s: any) => ({
+      id: s.id,
+      data: s.data !== undefined ? s.data : s
+    }));
+    await db.insert(schema.settings).values(safeSettings).onConflictDoUpdate({
+      target: schema.settings.id,
+      set: {
+        data: sql`EXCLUDED.data`
       }
     });
   }

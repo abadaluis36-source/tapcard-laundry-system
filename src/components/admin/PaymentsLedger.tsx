@@ -242,65 +242,22 @@ export const PaymentsLedger: React.FC = () => {
     });
   }, [filteredLedgerItems]);
 
-  // Real-time clock state to support automatic reset after 11:00 PM
-  const [currentTime, setCurrentTime] = useState<Date>(() => new Date());
+  // Overall KPI Metrics
+  const totalCollections = useMemo(() => {
+    return allLedgerItems.filter(p => !p.isReceivable).reduce((acc, p) => acc + p.amount, 0);
+  }, [allLedgerItems]);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 15000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const currentHour = currentTime.getHours();
-  // Automatic reset after 11:00 PM (23:00) until 6:59 AM next morning
-  const isResetToZero = currentHour >= 23 || currentHour < 7;
-
-  // Determine current active operating date:
-  // Use today's date if transactions exist for today, else fallback to latest date in ledger
-  const todayKey = extractDateKey(currentTime.toISOString());
-  const hasTodayTransactions = allLedgerItems.some(item => extractDateKey(item.date) === todayKey);
-  const activeDailyDateKey = hasTodayTransactions 
-    ? todayKey 
-    : (groupedPaymentsByDate[0]?.date || todayKey);
-
-  // Filter transactions belonging to the active day within 7:00 AM – 10:00 PM (actual collections only)
-  const dailyShiftTransactions = useMemo(() => {
-    return allLedgerItems.filter(item => {
-      // Exclude unpaid balances (receivables) from collected cash/gcash metrics
-      if (item.isReceivable) return false;
-      const itemDateKey = extractDateKey(item.date);
-      if (itemDateKey !== activeDailyDateKey) return false;
-      return isWithin7AmTo10Pm(item.date);
-    });
-  }, [allLedgerItems, activeDailyDateKey]);
-
-  // Daily KPI Metrics (7 AM to 10 PM, auto reset to 0 after 11 PM)
-  const dailyTotalCollections = useMemo(() => {
-    if (isResetToZero) return 0;
-    return dailyShiftTransactions.reduce((acc, p) => acc + p.amount, 0);
-  }, [isResetToZero, dailyShiftTransactions]);
-
-  const dailyCashOnHand = useMemo(() => {
-    if (isResetToZero) return 0;
-    return dailyShiftTransactions
-      .filter(p => p.paymentMethod === 'CASH')
+  const cashOnHand = useMemo(() => {
+    return allLedgerItems
+      .filter(p => !p.isReceivable && p.paymentMethod === 'CASH')
       .reduce((acc, p) => acc + p.amount, 0);
-  }, [isResetToZero, dailyShiftTransactions]);
+  }, [allLedgerItems]);
 
-  const dailyGCashRevenue = useMemo(() => {
-    if (isResetToZero) return 0;
-    return dailyShiftTransactions
-      .filter(p => p.paymentMethod === 'GCASH')
+  const gcashRevenue = useMemo(() => {
+    return allLedgerItems
+      .filter(p => !p.isReceivable && p.paymentMethod === 'GCASH')
       .reduce((acc, p) => acc + p.amount, 0);
-  }, [isResetToZero, dailyShiftTransactions]);
-
-  const totalOtherDigital = useMemo(() => {
-    if (isResetToZero) return 0;
-    return dailyShiftTransactions
-      .filter(p => p.paymentMethod !== 'CASH' && p.paymentMethod !== 'GCASH')
-      .reduce((acc, p) => acc + p.amount, 0);
-  }, [isResetToZero, dailyShiftTransactions]);
+  }, [allLedgerItems]);
 
   return (
     <div id="payments-ledger-view" className="space-y-4">
@@ -311,7 +268,7 @@ export const PaymentsLedger: React.FC = () => {
           Total Revenue
         </h1>
         <p className="text-xs text-slate-500 mt-0.5">
-          Daily payment and transaction records
+          Payment and transaction records
         </p>
       </div>
 
@@ -328,8 +285,8 @@ export const PaymentsLedger: React.FC = () => {
             </div>
           </div>
           <div className="mt-1">
-            <span className={`text-xl sm:text-2xl font-black font-mono ${isResetToZero ? 'text-slate-400' : 'text-slate-900'}`}>
-              ₱{dailyTotalCollections.toLocaleString()}
+            <span className="text-xl sm:text-2xl font-black font-mono text-slate-900">
+              ₱{totalCollections.toLocaleString()}
             </span>
           </div>
         </div>
@@ -345,8 +302,8 @@ export const PaymentsLedger: React.FC = () => {
             </div>
           </div>
           <div className="mt-1">
-            <span className={`text-xl sm:text-2xl font-black font-mono ${isResetToZero ? 'text-slate-400' : 'text-emerald-700'}`}>
-              ₱{dailyCashOnHand.toLocaleString()}
+            <span className="text-xl sm:text-2xl font-black font-mono text-emerald-700">
+              ₱{cashOnHand.toLocaleString()}
             </span>
           </div>
         </div>
@@ -362,8 +319,8 @@ export const PaymentsLedger: React.FC = () => {
             </div>
           </div>
           <div className="mt-1">
-            <span className={`text-xl sm:text-2xl font-black font-mono ${isResetToZero ? 'text-slate-400' : 'text-blue-700'}`}>
-              ₱{dailyGCashRevenue.toLocaleString()}
+            <span className="text-xl sm:text-2xl font-black font-mono text-blue-700">
+              ₱{gcashRevenue.toLocaleString()}
             </span>
           </div>
         </div>
